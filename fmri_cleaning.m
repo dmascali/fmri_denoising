@@ -66,6 +66,10 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 %   as the model itself (i.e., the explenatory variables)
 %   You can plot the model:
 %       figure; imagesc(model_info.X)
+%
+%Requirements:
+% SPM (https://www.fil.ion.ucl.ac.uk/spm/) is required if DATA is passed as
+% a Nifti file.
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome

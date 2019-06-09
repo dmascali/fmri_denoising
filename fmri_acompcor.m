@@ -43,9 +43,13 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                   for NaNs or voxels with zero signals (to save time)
 %                   {default='false'}
 %
+%Requirements:
+% SPM (https://www.fil.ion.ucl.ac.uk/spm/) is required if DATA and ROIs are 
+% passed as Nifti files.
+%
 %References:
-% Behzadi et al. (2007) Neuroimage 37, 90-101   
-% Whitfield-Gabrieli and Nieto-Castanon (2012) Brain Connect. 2(3), 154-41
+% - Behzadi et al. (2007) Neuroimage 37, 90-101   
+% - Whitfield-Gabrieli and Nieto-Castanon (2012) Brain Connect. 2(3), 154-41
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
