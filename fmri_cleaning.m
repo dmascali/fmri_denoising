@@ -65,7 +65,8 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 % -MODEL_INFO is a structure containing information about the model as well
 %   as the model itself (i.e., the explenatory variables)
 %   You can plot the model:
-%       figure; imagesc(model_info.X)
+%       figure; imagesc(model_info.X); xlabel('explenatory variables');
+%       ylabel('time');
 %
 %Requirements:
 % SPM (https://www.fil.ion.ucl.ac.uk/spm/) is required if DATA is passed as
