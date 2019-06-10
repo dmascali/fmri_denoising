@@ -23,8 +23,7 @@ function RPmetrics = fmri_rp_metrics(rp,type,ReferenceImage)
 %
 %Acknowledgements:
 % For FDjenk computation, this function adopts a code written by:
-% YAN Chao-Gan 120930 (ycg.yan@gmail.com) that is part of the toolbox:
-% DPARSF_V2.2_130309
+% YAN Chao-Gan 120930 (ycg.yan@gmail.com) that is part of the toolbox: DPARSF
 %
 %References:
 % - Power, Jonathan D., et al. "Spurious but systematic correlations in 
