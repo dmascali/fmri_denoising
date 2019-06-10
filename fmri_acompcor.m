@@ -1,12 +1,16 @@
 function X = fmri_acompcor(data,rois,dime,varargin)
 %FMRI_ACOMPCOR(DATA,ROIS,DIME) extracts signals from DATA using ROIS as masks.
-% -DIME specifies the number/type of signals. If DIME = 0 only the mean
-%  signal will be extracted, if DIME > 0 the first n=DIME principal components
-%  will be extracted (following the aCompCor approach).
+%Inputs:
 % -DATA can be a matrix or the path to a nifti file, if DATA is a matrix, the 
-%  last dimension must be time. (e.g., [XxYxZxTIME] or [VOXELSxTIME])
+%   last dimension must be time. (e.g., [XxYxZxTIME] or [VOXELSxTIME])
 % -ROIS is a cell array containg either matrices or paths to nifti files.
-%  ROIS must be binary.
+%   ROIS must be binary.
+% -DIME is a vector that specifies for each ROI the number/type of signals. 
+%   If DIME = 0 only the mean signal will be extracted, if DIME > 0 the  
+%   first n=DIME principal components will be extracted (following the 
+%   aCompCor approach). E.g., DIME = [0 5 5], extract the mean from the
+%   first roi and the first 5 principal components from each of the remaining 
+%   rois.
 %
 % NB1: Data is detrended (costant and linear trends are removed) before any
 %      computation
