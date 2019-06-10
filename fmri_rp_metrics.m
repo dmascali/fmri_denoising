@@ -42,7 +42,7 @@ switch lower(type)
         rp_indx.rot = [1 2 3];
         rp_indx.tra = [4 5 6];  
         rp_rot_unit = 'rad';
-    case {'spm'} %should be ok. Indeed they are plotted by SPM in degrees but they are saved in radians
+    case {'spm'} %ok. Indeed they are plotted by SPM in degrees but they are saved in radians
         rp_indx.rot = [4 5 6];
         rp_indx.tra = [1 2 3];         
         rp_rot_unit = 'rad';
