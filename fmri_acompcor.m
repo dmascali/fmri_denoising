@@ -1,16 +1,24 @@
 function X = fmri_acompcor(data,rois,dime,varargin)
 %FMRI_ACOMPCOR(DATA,ROIS,DIME) extracts signals from DATA using ROIS as masks.
 %Inputs:
-% -DATA can be a matrix or the path to a nifti file, if DATA is a matrix, the 
+% -DATA can be a matrix or the path to a nifti file. If DATA is a matrix, the 
 %   last dimension must be time. (e.g., [XxYxZxTIME] or [VOXELSxTIME])
 % -ROIS is a cell array containg either matrices or paths to nifti files.
-%   ROIS must be binary.
-% -DIME is a vector that specifies for each ROI the number/type of signals. 
-%   If DIME = 0 only the mean signal will be extracted, if DIME > 0 the  
-%   first n=DIME principal components will be extracted (following the 
-%   aCompCor approach). E.g., DIME = [0 5 5], extract the mean from the
-%   first roi and the first 5 principal components from each of the remaining 
-%   rois.
+%   (e.g., {ROI1, ROI2, ROI3} ). ROIS must be binary.
+% -DIME is a vector that specifies for each ROI the number/type of signals: 
+%  - DIME = 0            Only the mean signal will be extracted.
+%  - DIME > 0 & integer  The first n=DIME principal components will be 
+%                        extracted (following the aCompCor approach). 
+%                        E.g., DIME = [0 5 5], extracts the mean from the 
+%                        first ROI and the first 5 principal components from
+%                        each of the remaining ROIs.
+%  - 0<DIME<1;           In this case DIME specifies the desired percentage
+%                        of variance that the components must explain. The 
+%                        first n principal components that satisfy the
+%                        variance requirement are extracted. 
+%                        E.g., [0.5 0.5], extracts enough principal components
+%                        to explain 50% of variance in each ROI.  
+%                        This method was proposed by Muschelli et al. (2014)
 %
 % NB1: Data is detrended (costant and linear trends are removed) before any
 %      computation
@@ -54,6 +62,7 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %References:
 % - Behzadi et al. (2007) Neuroimage 37, 90-101   
 % - Whitfield-Gabrieli and Nieto-Castanon (2012) Brain Connect. 2(3), 154-41
+% - Muschelli et al. (2014) Neuroimage 96, 22-35
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
@@ -203,10 +212,20 @@ for r = 1:n_rois
             V = bsxfun(@rdivide,V,std(V));
         end
         [U,P] = svd(V);
-        if firstmean %add the mean signal and remove one dimension
-            comp = [mS,U(:,1:dime(r)-1)*diag(diag(P(1:dime(r)-1,1:dime(r)-1)))];
-        else
-            comp = U(:,1:dime(r))*diag(diag(P(1:dime(r),1:dime(r))));
+        % How many components to extract?
+        if mod(dime(r),1) == 0  % dime is an integer, and specifies the number of components
+            D = dime(r);
+            if firstmean; D = D-1; end %remove one dimension
+        else  % dime specifies the percentage of variance to extract
+            latent = diag(P.^2./(size(V,1)-1));
+            latent = latent./sum(latent); %normalise
+            indexes = find(cumsum(latent)>dime(r));
+            D = indexes(1);
+        end
+        % Select the components
+        comp = U(:,1:D)*diag(diag(P(1:D,1:D)));      
+        if firstmean %add the mean signal as first component 
+            comp = [mS,comp];
         end
     else  %if dime == 0 simply compute the straight average
         comp = mean(V,2);
