@@ -160,7 +160,7 @@ end
 X_dim = zeros(run_number,1);
 for r = 1:run_number
     %add Legendre pol
-    X_diag{r} = er_leg_pol(N(r),polort,removePol0);
+    X_diag{r} = LegPol(N(r),polort,removePol0);
     if ~isempty(passband)
         if length(passband) ~= 3
             error('PASSBAND must be a three elements vector: [TR,F1,F2].');
@@ -307,34 +307,3 @@ return
 end
 
 
-function X = er_leg_pol(N,order,exclude_costant)
-%return leg pol for regression till order 2
-% use exclude_costant flag to exlude constant term
-%
-% order -1 return empty matrix
-
-if order == -1
-    X = [];
-    return
-elseif order == 0
-    if ~exclude_costant
-        X = ones(N,1);
-    else
-        X = [];
-    end
-elseif order == 1
-    if ~exclude_costant
-        X = [ones(N,1), linspace(-1,1,N)'];    
-    else
-        X = linspace(-1,1,N)';    
-    end
-elseif order == 2
-    if ~exclude_costant
-        X = [ones(N,1), linspace(-1,1,N)',(linspace(-1,1,N).^2)'];    
-    else
-        X = [linspace(-1,1,N)',(linspace(-1,1,N).^2)'];   
-    end  
-end
-
-return
-end
