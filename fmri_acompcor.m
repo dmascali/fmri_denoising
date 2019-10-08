@@ -20,10 +20,6 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                        to explain 50% of variance in each ROI.  
 %                        This method was proposed by Muschelli et al. (2014)
 %
-% NB1: Data is detrended (costant and linear trends are removed) before any
-%      computation
-% NB2: All extracted signals are normalized to unit variance.  
-%
 %Additional options can be specified using the following parameters (each 
 % parameter must be followed by its value ie,'param1',value1,'param2',value2):
 %
@@ -38,6 +34,12 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                   i.e., ...'filter',[TR,F1,F2]. Where TR is the
 %                   repetition time, F1 and F2 are the frequency edges of
 %                   the bandpass filter. {default= []}
+%   'PolOrder'    : Legendre Polynomial Order, as bove, for regressing
+%                   constant, linear or quadratic terms. PolOrder can be: 
+%                   -1 : skip (not possilbe when DIME > 0)
+%                    0 : constant term 
+%                    1 : constant + linear terms {default}
+%                    2 : constant + linear + quadratic terms
 %   'firstmean'   : ['on'/'off'] If 'on', the first extracted component is 
 %                   the mean signal, then PCA is performed on data 
 %                   ortogonalised with respect to the mean signal.
@@ -54,6 +56,12 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %   'DataCleared' : ['true'/'false'] if 'true' the function avoids to seek
 %                   for NaNs or voxels with zero signals (to save time)
 %                   {default='false'}
+%
+% NB1: By default, data is detrended (costant and linear trends are removed)
+%      before any computation (unless 'PolOrder' is specified)
+% NB2: All extracted signals are normalized to unit variance.  
+% NB3: When DIME = 0, ortogonalizing the data with respect to 'confounds', 
+%     'filter' or 'PolOrder' has no effect on the final denoising model.
 %
 %Requirements:
 % SPM (https://www.fil.ion.ucl.ac.uk/spm/) is required if DATA and ROIs are 
@@ -74,8 +82,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','TvarNormalise','DataCleared','filter'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      []};
+params  =  {'confounds','firstmean','derivatives','squares','TvarNormalise','DataCleared','filter','PolOrder'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1 };
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = [];
@@ -83,7 +91,8 @@ legalValues{4} = [];
 legalValues{5} = {'on','off'};
 legalValues{6} = {'true','false'};
 legalValues{7} = [];
-[confounds,firstmean,deri,squares,TvarNormalise,DataCleared,freq] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{8} = [-1 0 1 2];
+[confounds,firstmean,deri,squares,TvarNormalise,DataCleared,freq,PolOrder] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -164,21 +173,25 @@ for r = 1:n_rois
         end
     end
     %----------------------------------------------------------------------
-    %--------------------------------
+    %----------------------------------------------------------------------
     %check if ROI is binary
     un = unique(ROI(:));
     if length(un) > 2 || sum(uint8(un)) > 1
         error(sprintf('ROI %d is not binary',r));
     end
     ROI = uint8(ROI);
-    %--------------------------------
+    %----------------------------------------------------------------------
+    % check if PolOrder is compatible with dime
+    if dime(r) > 0 && PolOrder == -1
+        warning('PCA should run on data demeaned. ChangingPolOrder from -1 to 1');
+        PolOrder = 1;
+    end
+    %----------------------------------------------------------------------
     % data extraction
     indx = find(ROI);
     V = data(:,indx);
-    %--------------------------------
-    % removal of costant and linear trend
-    V = detrend(V);
-    % lets remove voxels whose variance is equal zero (no signal in those voxels)
+    %----------------------------------------------------------------------
+    % remove voxels whose variance is equal zero (no signal in those voxels)
     % and Nan values
     if ~DataCleared
         stdv = std(V);
@@ -190,17 +203,22 @@ for r = 1:n_rois
     %------------------Orthogonalise V-------------------------------------
     COV = [];
     if firstmean && dime(r) > 0 % as done in CONN: first extract the mean signal (mS), then compute PCA over data ortogonalised with respect to mS. 
+        % to get a "clean" mean signal, I have to remove trends from V.
+        % Here PolOrder can't be -1
+        Xtrends = LegPol(size(V,1),PolOrder);
+        V = V -Xtrends*(Xtrends\V); 
         mS = mean(V,2);
+        % add the mean to COV
         COV = [COV,mS];
     end
-    if ~isempty(confounds)  % extract PCA over data already ortogonalised with respect to confounds.
-        COV = [COV,confounds];
+    if PolOrder ~= -1  %regress trends
+        COV = [COV,LegPol(size(V,1),PolOrder)];
     end
-    if ~isempty(confounds)
-        COV = detrend(COV);
-    end
-    if ~isempty(freq)  %to avoid detrending the frequency basis, although the detrend terms could be put in the model 
+    if ~isempty(freq) 
         COV = [COV,SineCosineBasis(size(V,1),freq(1),freq(2),freq(3),1)];
+    end
+    if ~isempty(confounds)  
+        COV = [COV,confounds];
     end
     if ~isempty(COV)
         V = V-COV*(COV\V);
@@ -230,6 +248,7 @@ for r = 1:n_rois
     else  %if dime == 0 simply compute the straight average
         comp = mean(V,2);
     end
+    %----------------------------------------------------------------------
     % derivatives computation, if requested
     if deri(r) > 0
         d = [];
@@ -240,6 +259,7 @@ for r = 1:n_rois
         d = [];
     end
     Xtmp = [comp,d];
+    %----------------------------------------------------------------------
     % squares computation, if requested
     if squares(r) > 0
         Xtmp = [Xtmp,Xtmp.^2];
