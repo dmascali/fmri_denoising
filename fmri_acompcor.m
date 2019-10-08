@@ -40,6 +40,12 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                    0 : constant term 
 %                    1 : constant + linear terms {default}
 %                    2 : constant + linear + quadratic terms
+%   'FullOrt'     : ['on'/'off'] If 'on', for each ROI (excluding the first
+%                   one) data is ortogonalised with respect to the
+%                   signals/components extracted up to that point (including
+%                   derivatives or square terms if present). In this way,
+%                   the full set of extracted signals are orthogonal. 
+%                   {default='off'}
 %   'firstmean'   : ['on'/'off'] If 'on', the first extracted component is 
 %                   the mean signal, then PCA is performed on data 
 %                   ortogonalised with respect to the mean signal.
@@ -82,8 +88,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','TvarNormalise','DataCleared','filter','PolOrder'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1 };
+params  =  {'confounds','firstmean','derivatives','squares','TvarNormalise','DataCleared','filter','PolOrder','FullOrt'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1      'off'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = [];
@@ -92,7 +98,8 @@ legalValues{5} = {'on','off'};
 legalValues{6} = {'true','false'};
 legalValues{7} = [];
 legalValues{8} = [-1 0 1 2];
-[confounds,firstmean,deri,squares,TvarNormalise,DataCleared,freq,PolOrder] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{9} = {'on','off'};
+[confounds,firstmean,deri,squares,TvarNormalise,DataCleared,freq,PolOrder,FullOrt] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -219,6 +226,9 @@ for r = 1:n_rois
     end
     if ~isempty(confounds)  
         COV = [COV,confounds];
+    end
+    if FullOrt  %include also already extracted signals (if present)
+        COV = [COV,X];
     end
     if ~isempty(COV)
         V = V-COV*(COV\V);
