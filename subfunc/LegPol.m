@@ -35,7 +35,9 @@ elseif order == 1
     end
 elseif order == 2
     if ~exclude_constant
-        X = [ones(N,1), linspace(-1,1,N)',(linspace(-1,1,N).^2)'];    
+        % the 2nd order is: P2(x) = 0.5*(3*x.^2 -1)
+        t = linspace(-1,1,N)';
+        X = [ones(N,1), t, (0.5*(3*t.^2-1))];    
     else
         X = [linspace(-1,1,N)',(linspace(-1,1,N).^2)'];   
     end  
