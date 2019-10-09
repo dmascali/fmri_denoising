@@ -44,13 +44,17 @@ t = x.*TR;
 
 Y = [];
 for l = 1:Nreg
-    Y = [Y,cos(2*pi*freq(index(l))*t)'];
-    Y = [Y,sin(2*pi*freq(index(l))*t)'];
+    Y(:,end+1) = cos(2*pi*freq(index(l))*t)';
+    Y(:,end+1) = sin(2*pi*freq(index(l))*t)';
 end
 
-% The sine of the nyquist frequency must be removed 
+% Replace the nyquist frequency if present
 if freq(index(end)) == nyquist
-    Y = Y(:,1:end-1);
+    Y(:,end-1:end) = [];
+    %in this case N is even
+    tmp = ones(N,1);
+    tmp(1:2:N,1) = -1;
+    Y = [Y,tmp];
 end
 
 %figure; plot(Y);
