@@ -235,6 +235,9 @@ for r = 1:n_rois
     end
     %----------------------------------------------------------------------
     if dime(r) > 0
+        % force the mean to be zero (the distribution of mean values may be
+        % slightly shifted if cofounds have been regressed)
+        V = bsxfun(@minus,V,mean(V));
         if TvarNormalise
             %tvariance normalization
             V = bsxfun(@rdivide,V,std(V));
