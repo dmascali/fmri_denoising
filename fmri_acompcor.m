@@ -203,7 +203,7 @@ for r = 1:n_rois
     %----------------------------------------------------------------------
     % check if PolOrder is compatible with dime
     if dime(r) > 0 && PolOrder == -1
-        warning('PCA should run on data demeaned. Change PolOrder from -1 to 1');
+        warning('PCA should run on data demeaned. Changing PolOrder from -1 to 1');
         PolOrder = 1;
     end
     %----------------------------------------------------------------------
