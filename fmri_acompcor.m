@@ -17,7 +17,7 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                        first n principal components that satisfy the
 %                        variance requirement are extracted. 
 %                        E.g., [0.5 0.5], extracts enough principal components
-%                        to explain 50% of variance in each ROI.  
+%                        to explain at least 50% of the variance in each ROI.  
 %                        This method was proposed by Muschelli et al. (2014)
 %
 %Additional options can be specified using the following parameters (each 
@@ -40,16 +40,9 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                    0 : constant term 
 %                    1 : constant + linear terms {default}
 %                    2 : constant + linear + quadratic terms
-%   'FullOrt'     : ['on'/'off'] If 'on', for each ROI (excluding the first
-%                   one) data is ortogonalised with respect to the
-%                   signals/components extracted up to that point (including
-%                   derivatives or square terms if present). In this way,
-%                   the full set of extracted signals are orthogonal. 
-%                   {default='off'}
-%   'firstmean'   : ['on'/'off'] If 'on', the first extracted component is 
-%                   the mean signal, then PCA is performed on data 
-%                   ortogonalised with respect to the mean signal.
-%                   {default='off'}
+%   'Concat'      : An array of integer values for specifing the starting index
+%                   of each run in case of concatenated runs (index starts 
+%                   from 1). E.g., [1 240 480]. {default = []}.
 %   'derivatives' : is a vector of roi length that specifies the degree of
 %                   derivatives to be computed on the extracted signals
 %                   {default=[],which is the same as zeros(1,length(rois))
@@ -57,15 +50,33 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                   whether to compute the squares of the extracted signals
 %                   (as well as the squares of derivatives, if present)
 %                   {default=[],which is the same as zeros(1,length(rois))
-%   'TvarNormalise':['on'/'off'], if set to 'on' the data is normalised by
+%
+%
+% Advanced/experimantal options (usually you don't need to change the 
+% default values) are:
+%
+%   'firstmean'   : ['on'/'off'] If 'on', the first extracted component is 
+%                   the mean signal, then PCA is performed on data 
+%                   ortogonalised with respect to the mean signal.
+%                   {default='off'}
+%   'FullOrt'     : ['on'/'off'] If 'on', for each ROI (excluding the first
+%                   one) data is ortogonalised with respect to the
+%                   signals/components extracted up to that point (including
+%                   derivatives or square terms if present). In this way,
+%                   the full set of extracted signals are orthogonal. 
+%                   {default='off'}
+%   'DatNormalise': ['on'/'off'], if set to 'on' the data is normalised by
 %                   its temporal variance before performing PCA {default='off'}
+%   'SigNormalise': ['on'/'off'], if set to 'on' the extracted signals are
+%                   normalised to unit variance {defaul='on'}
 %   'DataCleared' : ['true'/'false'] if 'true' the function avoids to seek
 %                   for NaNs or voxels with zero signals (to save time)
 %                   {default='false'}
 %
 % NB1: By default, data is detrended (costant and linear trends are removed)
 %      before any computation (unless 'PolOrder' is specified)
-% NB2: All extracted signals are normalized to unit variance.  
+% NB2: All extracted signals are normalised to unit variance (unless 'SigNormalise'
+%      is set to 'off')
 % NB3: When DIME = 0, ortogonalizing the data with respect to 'confounds', 
 %     'filter' or 'PolOrder' has no effect on the final denoising model.
 %
@@ -88,8 +99,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','TvarNormalise','DataCleared','filter','PolOrder','FullOrt'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1      'off'};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',          'off',       []};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = [];
@@ -99,7 +110,9 @@ legalValues{6} = {'true','false'};
 legalValues{7} = [];
 legalValues{8} = [-1 0 1 2];
 legalValues{9} = {'on','off'};
-[confounds,firstmean,deri,squares,TvarNormalise,DataCleared,freq,PolOrder,FullOrt] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{10} ={'on','off'};
+legalValues{11} = [];
+[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -190,7 +203,7 @@ for r = 1:n_rois
     %----------------------------------------------------------------------
     % check if PolOrder is compatible with dime
     if dime(r) > 0 && PolOrder == -1
-        warning('PCA should run on data demeaned. ChangingPolOrder from -1 to 1');
+        warning('PCA should run on data demeaned. Change PolOrder from -1 to 1');
         PolOrder = 1;
     end
     %----------------------------------------------------------------------
@@ -212,17 +225,17 @@ for r = 1:n_rois
     if firstmean && dime(r) > 0 % as done in CONN: first extract the mean signal (mS), then compute PCA over data ortogonalised with respect to mS. 
         % to get a "clean" mean signal, I have to remove trends from V.
         % Here PolOrder can't be -1
-        Xtrends = LegPol(size(V,1),PolOrder);
+        Xtrends = LegPol(size(V,1),PolOrder,0,'concat',ConCat);
         V = V -Xtrends*(Xtrends\V); 
         mS = mean(V,2);
         % add the mean to COV
         COV = [COV,mS];
     end
     if PolOrder ~= -1  %regress trends
-        COV = [COV,LegPol(size(V,1),PolOrder)];
+        COV = [COV,LegPol(size(V,1),PolOrder,0,'concat',ConCat)];
     end
     if ~isempty(freq) 
-        COV = [COV,SineCosineBasis(size(V,1),freq(1),freq(2),freq(3),1)];
+        COV = [COV,SineCosineBasis(size(V,1),freq(1),freq(2),freq(3),1,'concat',ConCat)];
     end
     if ~isempty(confounds)  
         COV = [COV,confounds];
@@ -237,14 +250,24 @@ for r = 1:n_rois
     if dime(r) > 0
         % force the mean to be zero (the distribution of mean values may be
         % slightly shifted if cofounds have been regressed). Also, again
-        % remove linear trends to avoid SVD failure
-        %V = bsxfun(@minus,V,mean(V));
-        V = detrend(V);
-        if TvarNormalise
+        % remove trends to avoid SVD failure
+        Xtrends = LegPol(size(V,1),PolOrder,0,'concat',ConCat); V = V -Xtrends*(Xtrends\V); 
+        if DatNormalise
             %tvariance normalization
             V = bsxfun(@rdivide,V,std(V));
         end
-        [U,P] = svd(V);
+        try % PCA may still fail to converge. In this case normalising the data usually solves the problem 
+            [U,P] = svd(V);
+        catch ME 
+            if DatNormalise
+                % nothing to do!
+                rethrow(ME)
+            else % let's try with DataNormalise
+                warning('PCA failed to converge. Second attempt using temporal variance normalisation...');
+                V = bsxfun(@rdivide,V,std(V));
+                [U,P] = svd(V);
+            end
+        end
         % How many components to extract?
         if mod(dime(r),1) == 0  % dime is an integer, and specifies the number of components
             D = dime(r);
@@ -283,8 +306,10 @@ for r = 1:n_rois
     X = [X,Xtmp];
 end
 
-% variance normalise the extracted components
-X = X./std(X,0,1);
+if SigNormalise
+    %variance normalise the extracted components
+    X = X./std(X,0,1);
+end
 
 return
 end
