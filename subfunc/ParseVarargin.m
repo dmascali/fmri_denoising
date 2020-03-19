@@ -11,21 +11,23 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 % LEGALVALUES can be empty (no check #2). For integer LEGALVALUES do not
 % provide them as cell (see example). 
 %
-%NB: varargout are forced to be LOWERCASE!
+%NB: varargout are forced to be lowercase if and only if the LEGALVALUE for
+%   the parameters are provided (i.e., it is not empty). 
 %
 %If CHAR2LOGIC is provided (and ~= 0), the function performs automatic convertion of 
 % chars to logical in case of: 'on','go','true' -> 1; 'off','stop','false' -> 0.
 %
 %Usage example:
 %
-%   varargin = {'tail','right','delta',42,'zscore','true'};
+%   varargin = {'tail','right','delta',42,'zscore','true', 'path_file', '/home/LAB_G1'};
 % 
-%   params  = {'tail','zscore','delta'};
-%   defparms = {'both',   'off',     3 };
+%   params   = {'tail','zscore','delta',   'path_file'};
+%   defparms = {'both',   'off',      3, '/home/PIPPO'};  %NOT forced to be lowercase                          
 %
-%   legalvalues{1} = {'both','right','left'};
-%   legalvalues{2} = {'true','false','off','on'};
-%   legalvalues{3} = [];
+%   legalvalues{1} = {'both','right','left'};     %forced to be lowercase
+%   legalvalues{2} = {'true','false','off','on'}; %forced to be lowercase
+%   legalvalues{3} = [];                          %NOT forced to be lowercase
+%   legalvalues{4} = [];                          %NOT forced to be lowercase
 %
 %   [tail,zscore_flag,delta] = parse_varargin(params,defparms,legalvalues,varargin)
 %__________________________________________________________________________
@@ -86,20 +88,23 @@ for l = 1:n_params
                     str = ['\n'];
                 end
                 error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'".',str]));
+            else % they are valid, force to be lowercase
+                var_arg{inputExist+1} = lower(var_arg{inputExist+1});
             end
+                
         end
         %-------------------------------------------------
         %input exists and is valid
         if char2logic && sum(strcmpi(tobeconverted,var_arg{inputExist+1})) %convert to logical if appropriate
             varargout{l} = char2logical(var_arg{inputExist+1},char2logical_true,char2logical_false);
         else
-            varargout{l} = lower(var_arg{inputExist+1});
+            varargout{l} = var_arg{inputExist+1}; %they are trasnformed to lowercase if and only if legalvalues{l} was not empty
         end
     else %assign default value
         if char2logic && sum(strcmpi(tobeconverted,defparams{l})) %convert to logical if appropriate
             varargout{l} = char2logical(defparams{l},char2logical_true,char2logical_false);
         else        
-            varargout{l} = lower(defparams{l});
+            varargout{l} = defparams{l}; %they are returned as they are (no lowercase forcing)
         end
     end
 end
