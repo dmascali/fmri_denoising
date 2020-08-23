@@ -100,7 +100,7 @@ end
 
 %--------------VARARGIN----------------------
 params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',          'off',       []};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       []};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = [];
