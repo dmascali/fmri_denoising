@@ -51,6 +51,11 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                   (as well as the squares of derivatives, if present)
 %                   {default=[],which is the same as zeros(1,length(rois))
 %
+% If DIME = 0, you can either extract the mean (def) or the median,
+% by using the following parameter:
+%
+%   'type'        : ['mean','median'] By defaul the function extracts the
+%                   mean. This parameter works only with DIME = 0. 
 %
 % Advanced/experimantal options (usually you don't need to change the 
 % default values) are:
@@ -99,8 +104,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       []};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = [];
@@ -112,7 +117,8 @@ legalValues{8} = [-1 0 1 2];
 legalValues{9} = {'on','off'};
 legalValues{10} ={'on','off'};
 legalValues{11} = [];
-[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{12} = {'mean','median'};
+[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -283,8 +289,13 @@ for r = 1:n_rois
         if firstmean %add the mean signal as first component 
             comp = [mS,comp];
         end
-    else  %if dime == 0 simply compute the straight average
-        comp = mean(V,2);
+    else  %if dime == 0 simply compute the straight average or median
+        switch MetricType
+            case {'mean'}
+                comp = mean(V,2);
+            case {'median'}
+                comp = median(V,2);
+        end
     end
     %----------------------------------------------------------------------
     % derivatives computation, if requested
