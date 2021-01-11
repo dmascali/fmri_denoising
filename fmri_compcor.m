@@ -84,6 +84,9 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %   'DataCleared' : ['true'/'false'] if 'true' the function avoids to seek
 %                   for NaNs or voxels with zero signals (to save time)
 %                   {default='false'}
+%   'SaveMask'    : ['on','off'] works only for tCompCor and if at least
+%                   one ROI is passed as a nifti file. Save the mask
+%                   created for tCompCor.
 %
 % NB1: By default, data is detrended (costant and linear trends are removed)
 %      before any computation (unless 'PolOrder' is specified)
@@ -111,8 +114,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean',         []};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean',         [],     'off'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
@@ -126,7 +129,8 @@ legalValues{10} ={'on','off'};
 legalValues{11} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
 legalValues{12} = {'mean','median'};
 legalValues{13} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
-[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{14} ={'on','off'};
+[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -181,7 +185,8 @@ for r = 1:n_rois
     %----------------------------------------------------------------------
     %------LOADING ROI, Checking compatibility with data and reshape-------
     if ischar(rois{r})
-        ROI = spm_read_vols(spm_vol(rois{r}));
+        header{r} = spm_vol(rois{r});
+        ROI = spm_read_vols(header{r});
         sr = size(ROI);
         %check if s and sr are identical in the first 3 dimensions
         if ~logical(sr == s(1:3))
@@ -235,6 +240,11 @@ for r = 1:n_rois
         a(stdv == 0) = 1;
         a(isnan(stdv)) = 1;
         V(:,logical(a)) = [];
+    end
+    if ~isempty(tCompCor) && dime(r) > 0
+        stdv = std(V);
+        [~,index] = sort(stdv,'descend');
+        V = V(:,index(1:tCompCor));
     end
     %------------------Orthogonalise V-------------------------------------
     COV = [];
@@ -323,7 +333,21 @@ for r = 1:n_rois
     if squares(r) > 0
         Xtmp = [Xtmp,Xtmp.^2];
     end
-   
+    
+    % only for tCompCor
+    if SaveMask
+        header_index = find(cellfun(@(x) ~isempty(x),header));
+        if ~isempty(header_index)
+            mask = 0.*ROI;
+            mask(index(1:tCompCor)) = 1;
+            output_name = ['tCompCor_mask_roi',num2str(r),'.nii'];
+            hdr = header{header_index};
+            hdr.fname = output_name;
+            hdr.private.dat.fname = output_name;
+            spm_write_vol(hdr,mask)
+        end
+    end
+    
     X = [X,Xtmp];
 end
 
