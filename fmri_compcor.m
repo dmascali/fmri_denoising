@@ -1,10 +1,13 @@
-function X = fmri_acompcor(data,rois,dime,varargin)
-%FMRI_ACOMPCOR(DATA,ROIS,DIME) extracts signals from DATA using ROIS as masks.
+function X = fmri_compcor(data,rois,dime,varargin)
+%FMRI_COMPCOR(DATA,ROIS,DIME) extracts signals (mean, mode, aCompCor or 
+% tCompCor) from DATA using ROIS as masks.
 %Inputs:
 % -DATA can be a matrix or the path to a nifti file. If DATA is a matrix, the 
 %   last dimension must be time. (e.g., [XxYxZxTIME] or [VOXELSxTIME])
 % -ROIS is a cell array containg either matrices or paths to nifti files.
-%   (e.g., {ROI1, ROI2, ROI3} ). ROIS must be binary.
+%   (e.g., {ROI1, ROI2, ROI3} ). ROIS must be binary. ROIS can also be
+%   empty matrices (e.g., {[]}, or {[],ROI2}). In this case the signal(s) are
+%   extracted overt the entire DATA matrix.
 % -DIME is a vector that specifies for each ROI the number/type of signals: 
 %  - DIME = 0            Only the mean signal will be extracted.
 %  - DIME > 0 & integer  The first n=DIME principal components will be 
@@ -19,6 +22,10 @@ function X = fmri_acompcor(data,rois,dime,varargin)
 %                        E.g., [0.5 0.5], extracts enough principal components
 %                        to explain at least 50% of the variance in each ROI.  
 %                        This method was proposed by Muschelli et al. (2014)
+%To extract tCompCor instead of aCompCor signals, use the property:
+% -'tcompcor',[n]   where n is an integer specifing the number of voxels 
+%                   to be selected with the highest standard deviation (see
+%                   Behzadi et al. 2007). 
 %
 %Additional options can be specified using the following parameters (each 
 % parameter must be followed by its value ie,'param1',value1,'param2',value2):
