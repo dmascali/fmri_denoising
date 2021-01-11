@@ -91,9 +91,13 @@ for l = 1:n_params
                         for m = 1:length(legalvalues{l})
                             str = [str,' "',legalvalues{l}{m},'"'];
                         end
-                        str = [str,'.\n'];
+                        str = [str,'.'];
                     else
-                        str = ['\n'];
+                        str = ['\nLegal values are:'];
+                        for m = 1:length(legalvalues{l})
+                            str = [str,' ',num2str(legalvalues{l}(m))];
+                        end
+                        str = [str,'.'];
                     end
                     error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'".',str]));
                 else % they are valid, force to be lowercase
