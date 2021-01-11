@@ -75,7 +75,7 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   one) data is ortogonalised with respect to the
 %                   signals/components extracted up to that point (including
 %                   derivatives or square terms if present). In this way,
-%                   the full set of extracted signals are orthogonal. 
+%                   the full set of extracted signals is orthogonal. 
 %                   {default='off'}
 %   'DatNormalise': ['on'/'off'], if set to 'on' the data is normalised by
 %                   its temporal variance before performing PCA {default='off'}
@@ -105,12 +105,11 @@ function X = fmri_compcor(data,rois,dime,varargin)
 % Enrico Fermi Center, MARBILab, Rome
 % danielemascali@gmail.com
 
-
 if nargin < 3
     error('Not enough input.');
 end
 
-%--------------VARARGIN----------------------
+%--------------VARARGIN----------------------------------------------------
 params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask'};
 defParms = {         [],      'off',           [],       [],          'off',     [],        1     'off',           'on',       [], 'mean',         [],     'off'};
 legalValues{1} = [];
@@ -127,8 +126,8 @@ legalValues{11} = {'mean','median'};
 legalValues{12} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
 legalValues{13} ={'on','off'};
 [confounds,firstmean,deri,squares,DatNormalise,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
-% --------------------------------------------
-
+%--------------------------------------------------------------------------
+%--Check input consistency and initialize variables------------------------
 if ~iscell(rois)
     error('Please provide rois as cell, i.e., rois = {''path1'',''path2.nii''} or rois = {matrix1,matrix2}. An empty ROI is also allowed, i.e., rois = {[]}.');
 end
@@ -144,7 +143,6 @@ if ~isempty(deri)
 else
     deri = zeros(1,n_rois);
 end
-
 if ~isempty(squares)
     %check if there is one value for each roi
     if length(squares) ~= n_rois
@@ -153,7 +151,6 @@ if ~isempty(squares)
 else
     squares= zeros(1,n_rois);
 end
-
 %--------------------------------------------------------------------------
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
@@ -184,8 +181,9 @@ GoodVoxels(~isnan(stdv)) = 1;
 GoodVoxels = uint8(GoodVoxels);
 % for convienice remove them from the ROIs later
 %--------------------------------------------------------------------------
-X = []; %output variable
 
+%cycle over ROIs
+X = []; %output variable
 for r = 1:n_rois
     %----------------------------------------------------------------------
     %------LOADING ROI, Checking compatibility with data and reshape-------
@@ -341,11 +339,10 @@ for r = 1:n_rois
     end
     
     % only for tCompCor
-    if SaveMask
+    if SaveMask && ~isempty(tCompCor) && dime(r) > 0 
         header_index = find(cellfun(@(x) ~isempty(x),header));
         if ~isempty(header_index)
-            mask = 0.*ROI;
-            mask(indx) = 1;
+            mask = 0.*ROI; mask(indx) = 1;
             mask = reshape(mask,[sr(1),sr(2),sr(3)]);
             output_name = ['tCompCor_mask_roi',num2str(r),'.nii'];
             hdr = header{header_index};
