@@ -111,11 +111,11 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean'};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor'};
+defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean',         []};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
-legalValues{3} = [];
+legalValues{3} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
 legalValues{4} = [];
 legalValues{5} = {'on','off'};
 legalValues{6} = {'true','false'};
@@ -123,9 +123,10 @@ legalValues{7} = [];
 legalValues{8} = [-1 0 1 2];
 legalValues{9} = {'on','off'};
 legalValues{10} ={'on','off'};
-legalValues{11} = [];
+legalValues{11} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
 legalValues{12} = {'mean','median'};
-[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{13} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
+[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)

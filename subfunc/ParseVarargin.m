@@ -72,26 +72,34 @@ for l = 1:n_params
     if inputExist
         %-------------check validity if desired-----------
         if ~isempty(legalvalues) && ~isempty(legalvalues{l}) 
-            if iscell(legalvalues{l}) 
-                valid_check = sum(strcmpi(legalvalues{l}, var_arg{inputExist+1}));
-            else % numbers must not be in cells
-                valid_check = sum(legalvalues{l} == var_arg{inputExist+1});
-            end
-            if valid_check == 0
-                if iscell(legalvalues{l}) 
-                    str = ['\nLegal values are:'];
-                    for m = 1:length(legalvalues{l})
-                        str = [str,' "',legalvalues{l}{m},'"'];
-                    end
-                    str = [str,'.\n'];
-                else
-                    str = ['\n'];
+            
+            if iscell(legalvalues{l}) && isa(legalvalues{l}{1},'function_handle')
+                %this is a function handle
+                if ~legalvalues{l}{1}(var_arg{inputExist+1}) %evaluate the parameter
+                    % result is false, print attached error message
+                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'". ',legalvalues{l}{2}]));
                 end
-                error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'".',str]));
-            else % they are valid, force to be lowercase
-                var_arg{inputExist+1} = lower(var_arg{inputExist+1});
-            end
-                
+            else
+                if iscell(legalvalues{l}) 
+                    valid_check = sum(strcmpi(legalvalues{l}, var_arg{inputExist+1}));
+                else % numbers must not be in cells
+                    valid_check = sum(legalvalues{l} == var_arg{inputExist+1});
+                end
+                if valid_check == 0
+                    if iscell(legalvalues{l}) 
+                        str = ['\nLegal values are:'];
+                        for m = 1:length(legalvalues{l})
+                            str = [str,' "',legalvalues{l}{m},'"'];
+                        end
+                        str = [str,'.\n'];
+                    else
+                        str = ['\n'];
+                    end
+                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'".',str]));
+                else % they are valid, force to be lowercase
+                    var_arg{inputExist+1} = lower(var_arg{inputExist+1});
+                end
+            end 
         end
         %-------------------------------------------------
         %input exists and is valid
