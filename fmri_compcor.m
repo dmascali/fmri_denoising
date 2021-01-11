@@ -129,7 +129,7 @@ legalValues{12} = {'mean','median'};
 % --------------------------------------------
 
 if ~iscell(rois)
-    error('Please provide rois as cell, i.e., rois = {''path1'',''path2.nii''} or rois = {matrix1,matrix2}');
+    error('Please provide rois as cell, i.e., rois = {''path1'',''path2.nii''} or rois = {matrix1,matrix2}. An empty ROI is also allowed, i.e., rois = {[]}.');
 end
 n_rois = length(rois);
 if length(dime)~=n_rois
@@ -190,7 +190,9 @@ for r = 1:n_rois
     else
         ROI = rois{r};
         sr = size(ROI);
-        if length(sr) > 2  %it's a 3d volume
+        if isempty(ROI) % use the entire matrix
+            ROI = ones(1,prod(s(1:end-1)));
+        elseif length(sr) > 2  %it's a 3d volume
             if ~isequal(s(1:end-1),sr) 
                 error(sprintf('ROI %d does not have the same dimension of data',r));
             end
