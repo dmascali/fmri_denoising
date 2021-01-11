@@ -81,9 +81,6 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   its temporal variance before performing PCA {default='off'}
 %   'SigNormalise': ['on'/'off'], if set to 'on' the extracted signals are
 %                   normalised to unit variance {defaul='on'}
-%   'DataCleared' : ['true'/'false'] if 'true' the function avoids to seek
-%                   for NaNs or voxels with zero signals (to save time)
-%                   {default='false'}
 %   'SaveMask'    : ['on','off'] works only for tCompCor and if at least
 %                   one ROI is passed as a nifti file. Save the mask
 %                   created for tCompCor.
@@ -114,23 +111,22 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------
-params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','DataCleared','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask'};
-defParms = {         [],      'off',           [],       [],          'off',      'false',      [],        1     'off',           'on',       [], 'mean',         [],     'off'};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask'};
+defParms = {         [],      'off',           [],       [],          'off',     [],        1     'off',           'on',       [], 'mean',         [],     'off'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
 legalValues{4} = [];
 legalValues{5} = {'on','off'};
-legalValues{6} = {'true','false'};
-legalValues{7} = [];
-legalValues{8} = [-1 0 1 2];
-legalValues{9} = {'on','off'};
-legalValues{10} ={'on','off'};
-legalValues{11} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
-legalValues{12} = {'mean','median'};
-legalValues{13} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
-legalValues{14} ={'on','off'};
-[confounds,firstmean,deri,squares,DatNormalise,DataCleared,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{6} = [];
+legalValues{7} = [-1 0 1 2];
+legalValues{8} = {'on','off'};
+legalValues{9} ={'on','off'};
+legalValues{10} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
+legalValues{11} = {'mean','median'};
+legalValues{12} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
+legalValues{13} ={'on','off'};
+[confounds,firstmean,deri,squares,DatNormalise,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
 % --------------------------------------------
 
 if ~iscell(rois)
@@ -178,7 +174,16 @@ end
 %data will be reshaped with the first dimension as time (this allows easy
 %handling of preloaded data)
 %--------------------------------------------------------------------------
-
+%--------------------------------------------------------------------------
+% find voxels whose variance is equal zero (no signal in those voxels)
+% and Nan values
+stdv = std(data);
+GoodVoxels = zeros(1,length(stdv));
+GoodVoxels(stdv ~= 0) = 1;
+GoodVoxels(~isnan(stdv)) = 1;
+GoodVoxels = uint8(GoodVoxels);
+% for convienice remove them from the ROIs later
+%--------------------------------------------------------------------------
 X = []; %output variable
 
 for r = 1:n_rois
@@ -228,24 +233,25 @@ for r = 1:n_rois
         PolOrder = 1;
     end
     %----------------------------------------------------------------------
+    % remove badvoxels (without change matrix structure
+    ROI = ROI.*GoodVoxels;
+    %----------------------------------------------------------------------
     % data extraction
     indx = find(ROI);
+    if ~isempty(tCompCor) && dime(r) > 0  %tcompcor
+        [~,indx_std] = sort(stdv,'descend');
+        indx_stdInRoi = ismember(indx_std,indx);
+        %overwrite indx variable
+        indx = indx_std(find(indx_stdInRoi,tCompCor));
+        nvoxel = length(indx);
+        if nvoxel < dime(r)
+            error(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
+        end
+        if nvoxel < tCompCor 
+            warning(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxels),' voxels.']);
+        end
+    end
     V = data(:,indx);
-    %----------------------------------------------------------------------
-    % remove voxels whose variance is equal zero (no signal in those voxels)
-    % and Nan values
-    if ~DataCleared
-        stdv = std(V);
-        a = zeros(1,length(stdv));
-        a(stdv == 0) = 1;
-        a(isnan(stdv)) = 1;
-        V(:,logical(a)) = [];
-    end
-    if ~isempty(tCompCor) && dime(r) > 0
-        stdv = std(V);
-        [~,index] = sort(stdv,'descend');
-        V = V(:,index(1:tCompCor));
-    end
     %------------------Orthogonalise V-------------------------------------
     COV = [];
     if firstmean && dime(r) > 0 % as done in CONN: first extract the mean signal (mS), then compute PCA over data ortogonalised with respect to mS. 
@@ -339,12 +345,13 @@ for r = 1:n_rois
         header_index = find(cellfun(@(x) ~isempty(x),header));
         if ~isempty(header_index)
             mask = 0.*ROI;
-            mask(index(1:tCompCor)) = 1;
+            mask(indx) = 1;
+            mask = reshape(mask,[sr(1),sr(2),sr(3)]);
             output_name = ['tCompCor_mask_roi',num2str(r),'.nii'];
             hdr = header{header_index};
             hdr.fname = output_name;
             hdr.private.dat.fname = output_name;
-            spm_write_vol(hdr,mask)
+            spm_write_vol(hdr,mask);
         end
     end
     
