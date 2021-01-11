@@ -8,8 +8,13 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 %Performs several checks: 1) returns error if property names are not valid 
 % (ie, are not among PARAMS). 2) [optinal] checks validity of property values
 % (requires LEGALVALUES). 
-% LEGALVALUES can be empty (no check #2). For integer LEGALVALUES do not
-% provide them as cell (see example). 
+% All input must be cells (see examples). 
+% LEGALVALUES can be empty:
+%   empty -> no check (#2)
+%   a cell array of strings to be compared to the parameter value
+%   a two cell element. First element is a function handle which has to return 
+%          true or false depending on the parameter value. The second element
+%          is the error message in case the function returned false.
 %
 %NB: varargout are forced to be lowercase if and only if the LEGALVALUE for
 %   the parameters are provided (i.e., it is not empty). 
@@ -19,15 +24,18 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 %
 %Usage example:
 %
-%   varargin = {'tail','right','delta',42,'zscore','true', 'path_file', '/home/LAB_G1'};
+%   varargin = {'tail','right',...
+%               'zscore','true',...
+%               'path_file', '/home/LAB_G1'};
+%               'delta',42}
 % 
-%   params   = {'tail','zscore','delta',   'path_file'};
-%   defparms = {'both',   'off',      3, '/home/PIPPO'};  %NOT forced to be lowercase                          
+%   params   = {'tail','zscore',   'path_file',  'delta'};
+%   defparms = {'both',   'off', '/home/PIPPO',      3, };                          
 %
 %   legalvalues{1} = {'both','right','left'};     %forced to be lowercase
 %   legalvalues{2} = {'true','false','off','on'}; %forced to be lowercase
-%   legalvalues{3} = [];                          %NOT forced to be lowercase
-%   legalvalues{4} = [];                          %NOT forced to be lowercase
+%   legalvalues{3} = [];                          %NOT forced to be lowercase  
+%   legalvalues{4} = {@(x) (sum(mod(x,1))==0),'Only integer values are allowed.'};
 %
 %   [tail,zscore_flag,delta] = parse_varargin(params,defparms,legalvalues,varargin)
 %__________________________________________________________________________
