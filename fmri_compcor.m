@@ -246,7 +246,7 @@ for r = 1:n_rois
             error(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
         end
         if nvoxel < tCompCor 
-            warning(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxels),' voxels.']);
+            warning(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxel),' voxels.']);
         end
     end
     V = data(:,indx);
