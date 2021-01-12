@@ -154,7 +154,7 @@ else
     squares= zeros(1,n_rois);
 end
 %--------------------------------------------------------------------------
-% start comunicating to stdo:
+% start comunicating to stdout:
 fname = mfilename;
 fprintf('%s - start\n',fname);
 %------LOADING DATA and reshape--------------------------------------------
@@ -239,7 +239,7 @@ for r = 1:n_rois
         roi_name = ['ROI',num2str(r)]; % cannot use inputname since rois are inside cells
     end
     %----------------------------------------------------------------------
-    % comunicat to stdo:
+    % comunicat to stdout:
     if dime(r) == 0
          whatToExtract = [MetricType,' signal'];
     else
@@ -278,23 +278,42 @@ for r = 1:n_rois
     % remove badvoxels (without changing matrix structure)
     ROI = ROI.*GoodVoxels;
     %----------------------------------------------------------------------
-    % data extraction
+    % data extraction and definition of the maxium possible number of components,
+    % if dime exceeds this value throw an error
     indx = find(ROI);
     if ~isempty(tCompCor) && dime(r) > 0  %tcompcor
-        %we have to recompute std after removing trends (as done in the
-        %original paper)
-        Xtrends = LegPol(N,2); Vtmp = data -Xtrends*(Xtrends\data);
-        stdv = std(Vtmp); clear Vtmp; %this V is just for mask purpose 
-        [~,indx_std] = sort(stdv,'descend');
+        if dime(r) > tCompCor
+            error('DIME must be lower than the size of the mask. Consider increasing the "tCompCor" parameter (i.e., the number of voxels to be selected).');
+        end
+        if ~(exist('indx_std','var')) %time consuming step, avoid running it multiple times
+            %we have to recompute std after removing trends (as done in the
+            %original paper)
+            Xtrends = LegPol(N,2); 
+            Vtmp = data -Xtrends*(Xtrends\data);
+            %this Vtmp is just for mask purpose 
+            [~,indx_std] = sort(std(Vtmp),'descend');
+        end
         indx_stdInRoi = ismember(indx_std,indx);
         %overwrite indx variable
         indx = indx_std(find(indx_stdInRoi,tCompCor));
         nvoxel = length(indx);
-        if nvoxel < dime(r)
-            error(['There are not enough voxels in ',roi_name,' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
+        % calculate max possible DIME
+        maxDime = min(N-1,nvoxel);
+        if dime(r) > maxDime
+            error('Maximum number of PCs is %d (N-1=%d, tCompcor MaskSize=%d). DIME for %s exceeds this value (%d).', maxDime,N,nvoxel,roi_name,dime(r));
         end
+%         if nvoxel < dime(r)
+%             error(['There are not enough voxels in ',roi_name,' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
+%         end
         if nvoxel < tCompCor 
-            warning(['There are not enough voxels in ',roi_name,' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxel),' voxels.']);
+            warning(['There are not enough voxels in ',roi_name,' to perform tCompCor over ',num2str(tCompCor),' voxels. tCompCor will be calculated over ',num2str(nvoxel),' voxels.']);
+        end
+    elseif dime(r) > 0 %aCompcor
+        % in this case we just need to compute maxDime
+        nvoxel = length(indx);
+        maxDime = min(N-1,nvoxel);
+        if dime(r) > maxDime
+            error('Maximum number of PCs is %d (N-1=%d, RoiSize=%d). DIME for %s exceeds this value (%d).', maxDime,N,nvoxel,roi_name,dime(r));
         end
     end
     V = data(:,indx);
