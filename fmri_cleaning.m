@@ -92,7 +92,7 @@ legalvalues{6} = {'on','off'};
 %--------------------------------------------------------------------------
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
-    [filepath,name,ext] = fileparts(data);
+    [~,name] = fileparts(data); name = remove_nii_ext(name);
     hdr = spm_vol(data);
     data = spm_read_vols(hdr);
     s = size(data);
@@ -277,14 +277,14 @@ if restoremean
 end
 
 if writeNii
-    output_name = [name,'_cleaned',ext];
+    output_name = [name,'_cleaned.nii'];
     for l = 1:Nfinal
         hdr(l).fname = output_name;
         hdr(l).private.dat.fname = output_name;
         if ~isempty(cens) && strcmpi(cenmode,'kill')
             hdr(l).private.dat.dim(end) =  Nfinal;
         end
-        spm_write_vol(hdr(l),res(colons{:},l))
+        spm_write_vol(hdr(l),res(colons{:},l));
     end
 end
 
@@ -306,4 +306,9 @@ end
 return
 end
 
-
+function s = remove_nii_ext(s)
+% in case you pass a .gz, fileparts remove the last ext and not the .nii
+indx =  strfind(s,'.nii');
+s(indx:end) = [];
+return
+end
