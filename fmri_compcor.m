@@ -116,16 +116,16 @@ params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','filt
 defParms = {         [],      'off',           [],       [],          'off',     [],        1     'off',           'on',       [], 'mean',         [],     'off'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
-legalValues{3} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
+legalValues{3} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalValues{4} = [];
 legalValues{5} = {'on','off'};
 legalValues{6} = [];
 legalValues{7} = [-1 0 1 2];
 legalValues{8} = {'on','off'};
 legalValues{9} ={'on','off'};
-legalValues{10} = {@(x) (~ischar(x) && sum(mod(x,1))==0),'Only integer values are allowed.'};
+legalValues{10} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalValues{11} = {'mean','median'};
-legalValues{12} = {@(x) (~ischar(x) && mod(x,1)==0),'Only integer values are allowed.'};
+legalValues{12} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalValues{13} ={'on','off'};
 [confounds,firstmean,deri,squares,DatNormalise,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
 %--------------------------------------------------------------------------
@@ -154,6 +154,9 @@ else
     squares= zeros(1,n_rois);
 end
 %--------------------------------------------------------------------------
+% start comunicating to stdo:
+fname = mfilename;
+fprintf('%s - start\n',fname);
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
     data = spm_read_vols(spm_vol(data));
@@ -221,6 +224,28 @@ for r = 1:n_rois
         roi_name = ['ROI',num2str(r)]; % cannot use inputname since rois are inside cells
     end
     %----------------------------------------------------------------------
+    % comunicat to stdo:
+    if dime(r) == 0
+         whatToExtract = [MetricType,' signal'];
+    else
+        if ~isempty(tCompCor)
+            compmode = 'tCompCor';
+        else
+            compmode = 'aCompCor';
+        end
+        if mod(dime(r),1) == 0 % fixed number of components
+            whatToExtract = [num2str(dime(r)),' ',compmode,' signals'];
+        else
+            whatToExtract = [compmode,num2str(dime(r)*100),'%% signals'];
+        end
+    end
+    if deri(r) > 0
+        whatToExtract = [whatToExtract,' plus ',num2str(deri(r)),' derivatives'];
+    end
+    if squares(r) > 0
+        whatToExtract = [whatToExtract,' plus squared terms'];
+    end
+    fprintf('%s - %s: extracting %s...',fname,roi_name,whatToExtract);
     %----------------------------------------------------------------------
     %check if ROI is binary
     un = unique(ROI(:));
@@ -346,23 +371,26 @@ for r = 1:n_rois
     if SaveMask && ~isempty(tCompCor) && dime(r) > 0 && exist('header','var')
         header_index = find(cellfun(@(x) ~isempty(x),header));
         if ~isempty(header_index)
-            mask = 0.*ROI; mask(indx) = 1;
-            mask = reshape(mask,[sr(1),sr(2),sr(3)]);
-            output_name = ['tCompCor_mask_',roi_name,'.nii'];
             hdr = header{header_index};
+            output_name = ['tCompCor_mask_',roi_name,'.nii'];
             hdr.fname = output_name;
             hdr.private.dat.fname = output_name;
+            mask = 0.*ROI; mask(indx) = 1;
+            mask = reshape(mask,[hdr.dim(1),hdr.dim(2),hdr.dim(3)]);
             spm_write_vol(hdr,mask);
         end
     end
     
     X = [X,Xtmp];
+    fprintf('done.\n');
 end
 
 if SigNormalise
     %variance normalise the extracted components
     X = X./std(X,0,1);
 end
+
+fprintf(['%s - end\n'],mfilename);
 
 return
 end
