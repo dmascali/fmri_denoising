@@ -26,8 +26,8 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                        This method was proposed by Muschelli et al. (2014)
 %To extract tCompCor instead of aCompCor signals, use the property:
 % -'tcompcor',[n]   where n is an integer specifing the number of voxels 
-%                   to be selected with the highest standard deviation (see
-%                   Behzadi et al. 2007). 
+%                   to be selected with the highest temporal standard 
+%                   deviation (see Behzadi et al. 2007). 
 %
 %Additional options can be specified using the following parameters (each 
 % parameter must be followed by its value ie,'param1',value1,'param2',value2):
@@ -245,7 +245,7 @@ for r = 1:n_rois
     if squares(r) > 0
         whatToExtract = [whatToExtract,' plus squared terms'];
     end
-    fprintf('%s - %s: extracting %s...',fname,roi_name,whatToExtract);
+    fprintf('%s - %s: extracting %s\n',fname,roi_name,whatToExtract);
     %----------------------------------------------------------------------
     %check if ROI is binary
     un = unique(ROI(:));
@@ -260,12 +260,16 @@ for r = 1:n_rois
         PolOrder = 1;
     end
     %----------------------------------------------------------------------
-    % remove badvoxels (without change matrix structure
+    % remove badvoxels (without changing matrix structure)
     ROI = ROI.*GoodVoxels;
     %----------------------------------------------------------------------
     % data extraction
     indx = find(ROI);
     if ~isempty(tCompCor) && dime(r) > 0  %tcompcor
+        %we have to recompute std after removing trends (as done in the
+        %original paper)
+        Xtrends = LegPol(s(4),2); Vtmp = data -Xtrends*(Xtrends\data);
+        stdv = std(Vtmp); clear Vtmp; %this V is just for mask purpose 
         [~,indx_std] = sort(stdv,'descend');
         indx_stdInRoi = ismember(indx_std,indx);
         %overwrite indx variable
@@ -382,7 +386,6 @@ for r = 1:n_rois
     end
     
     X = [X,Xtmp];
-    fprintf('done.\n');
 end
 
 if SigNormalise
