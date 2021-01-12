@@ -8,6 +8,8 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %   (e.g., {ROI1, ROI2, ROI3} ). ROIS must be binary. ROIS can also be
 %   empty matrices (e.g., {[]}, or {[],ROI2}). In this case the signal(s) are
 %   extracted overt the entire DATA matrix.
+%   Signals are extracted from each ROI separately and then concantenated 
+%   into X. 
 % -DIME is a vector that specifies for each ROI the number/type of signals: 
 %  - DIME = 0            Only the mean signal will be extracted.
 %  - DIME > 0 & integer  The first n=DIME principal components will be 
@@ -77,9 +79,9 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   derivatives or square terms if present). In this way,
 %                   the full set of extracted signals is orthogonal. 
 %                   {default='off'}
-%   'DatNormalise': ['on'/'off'], if set to 'on' the data is normalised by
+%   'DatNormalise': ['on'/'off'], if set to 'on' DATA is normalised by
 %                   its temporal variance before performing PCA {default='off'}
-%   'SigNormalise': ['on'/'off'], if set to 'on' the extracted signals are
+%   'SigNormalise': ['on'/'off'], if set to 'on' the extracted signals X are
 %                   normalised to unit variance {defaul='on'}
 %   'SaveMask'    : ['on','off'] works only for tCompCor and if at least
 %                   one ROI is passed as a nifti file. Save the mask
@@ -229,7 +231,7 @@ for r = 1:n_rois
     %----------------------------------------------------------------------
     % check if PolOrder is compatible with dime
     if dime(r) > 0 && PolOrder == -1
-        warning('PCA should run on data demeaned. Changing PolOrder from -1 to 1');
+        warning('PCA should be performed on demeaned data. Changing PolOrder from -1 to 1');
         PolOrder = 1;
     end
     %----------------------------------------------------------------------
