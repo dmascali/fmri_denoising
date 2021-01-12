@@ -188,12 +188,13 @@ for r = 1:n_rois
     %----------------------------------------------------------------------
     %------LOADING ROI, Checking compatibility with data and reshape-------
     if ischar(rois{r})
+        [~,roi_name] = fileparts(rois{r}); roi_name = remove_nii_ext(roi_name);
         header{r} = spm_vol(rois{r});
         ROI = spm_read_vols(header{r});
         sr = size(ROI);
         %check if s and sr are identical in the first 3 dimensions
         if ~logical(sr == s(1:3))
-            error(sprintf('ROI %d does not have the same dimension of data',r));
+            error(sprintf('ROI %s does not have the same dimension of data',roi_name));
         end
         ROI = reshape(ROI,[1,sr(1)*sr(2)*sr(3)]);
     else
@@ -215,6 +216,7 @@ for r = 1:n_rois
         else
             error(sprintf('ROI %d does not have the same dimension of data',r));
         end
+        roi_name = ['ROI',num2str(r)]; % cannot use inputname since rois are inside cells
     end
     %----------------------------------------------------------------------
     %----------------------------------------------------------------------
@@ -243,10 +245,10 @@ for r = 1:n_rois
         indx = indx_std(find(indx_stdInRoi,tCompCor));
         nvoxel = length(indx);
         if nvoxel < dime(r)
-            error(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
+            error(['There are not enough voxels in ',roi_name,' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
         end
         if nvoxel < tCompCor 
-            warning(['There are not enough voxels in ROI',num2str(r),' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxel),' voxels.']);
+            warning(['There are not enough voxels in ',roi_name,' to perform tCompCor on ',num2str(tCompCor),' voxels. tCompCor will be calculated on ',num2str(nvoxel),' voxels.']);
         end
     end
     V = data(:,indx);
@@ -339,12 +341,12 @@ for r = 1:n_rois
     end
     
     % only for tCompCor
-    if SaveMask && ~isempty(tCompCor) && dime(r) > 0 
+    if SaveMask && ~isempty(tCompCor) && dime(r) > 0 && exist('header','var')
         header_index = find(cellfun(@(x) ~isempty(x),header));
         if ~isempty(header_index)
             mask = 0.*ROI; mask(indx) = 1;
             mask = reshape(mask,[sr(1),sr(2),sr(3)]);
-            output_name = ['tCompCor_mask_roi',num2str(r),'.nii'];
+            output_name = ['tCompCor_mask_',roi_name,'.nii'];
             hdr = header{header_index};
             hdr.fname = output_name;
             hdr.private.dat.fname = output_name;
@@ -360,5 +362,12 @@ if SigNormalise
     X = X./std(X,0,1);
 end
 
+return
+end
+
+function s = remove_nii_ext(s)
+% in case you pass a .gz, fileparts remove the last ext and not the .nii
+indx =  strfind(s,'.nii');
+s(indx:end) = [];
 return
 end
