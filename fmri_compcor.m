@@ -159,7 +159,8 @@ fname = mfilename;
 fprintf('%s - start\n',fname);
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
-    data = spm_read_vols(spm_vol(data));
+    [~,hdr] = evalc('spm_vol(data);'); % to avoid an annoying messange in case of .gz
+    data = spm_read_vols(hdr);
     s = size(data);
     data = reshape(data,[s(1)*s(2)*s(3),s(4)])';
 else
@@ -187,6 +188,18 @@ GoodVoxels = uint8(GoodVoxels);
 % for convienice remove them from the ROIs later
 %--------------------------------------------------------------------------
 
+% search for headers in case of tCompCor and SaveMask
+if ~isempty(tCompCor) && SaveMask
+    for r = 1:n_rois
+        header{r} = [];
+        if ischar(rois{r})
+            [~,header{r}] = evalc('spm_vol(rois{r});');
+        else
+            header{r} = [];
+        end
+    end
+end
+
 %cycle over ROIs
 X = []; %output variable
 for r = 1:n_rois
@@ -194,7 +207,8 @@ for r = 1:n_rois
     %------LOADING ROI, Checking compatibility with data and reshape-------
     if ischar(rois{r})
         [~,roi_name] = fileparts(rois{r}); roi_name = remove_nii_ext(roi_name);
-        header{r} = spm_vol(rois{r});
+        %header{r} = spm_vol(rois{r}); %not used anymore, headers are
+        %loaded above
         ROI = spm_read_vols(header{r});
         sr = size(ROI);
         %check if s and sr are identical in the first 3 dimensions
@@ -236,7 +250,7 @@ for r = 1:n_rois
         if mod(dime(r),1) == 0 % fixed number of components
             whatToExtract = [num2str(dime(r)),' ',compmode,' signals'];
         else
-            whatToExtract = [compmode,num2str(dime(r)*100),'%% signals'];
+            whatToExtract = [compmode,num2str(dime(r)*100),'% signals'];
         end
     end
     if deri(r) > 0
@@ -372,8 +386,8 @@ for r = 1:n_rois
     end
     
     % only for tCompCor
-    if SaveMask && ~isempty(tCompCor) && dime(r) > 0 && exist('header','var')
-        header_index = find(cellfun(@(x) ~isempty(x),header));
+    if SaveMask && ~isempty(tCompCor) && dime(r) > 0 % && exist('header','var')
+        header_index = find(cellfun(@(x) ~isempty(x),header),1);   
         if ~isempty(header_index)
             hdr = header{header_index};
             output_name = ['tCompCor_mask_',roi_name,'.nii'];
