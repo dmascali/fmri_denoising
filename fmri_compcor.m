@@ -189,17 +189,17 @@ GoodVoxels = uint8(GoodVoxels);
 % for convienice remove them from the ROIs later
 %--------------------------------------------------------------------------
 
-% search for headers in case of tCompCor and SaveMask
-if ~isempty(tCompCor) && SaveMask
-    for r = 1:n_rois
+% search for headers (this is out of the main loop just for tCompcor &
+% savemask)
+for r = 1:n_rois
+    header{r} = [];
+    if ischar(rois{r})
+        [~,header{r}] = evalc('spm_vol(rois{r});');
+    else
         header{r} = [];
-        if ischar(rois{r})
-            [~,header{r}] = evalc('spm_vol(rois{r});');
-        else
-            header{r} = [];
-        end
     end
 end
+
 
 %cycle over ROIs
 X = []; %output variable
@@ -208,8 +208,6 @@ for r = 1:n_rois
     %------LOADING ROI, Checking compatibility with data and reshape-------
     if ischar(rois{r})
         [~,roi_name] = fileparts(rois{r}); roi_name = remove_nii_ext(roi_name);
-        %header{r} = spm_vol(rois{r}); %not used anymore, headers are
-        %loaded above
         ROI = spm_read_vols(header{r});
         sr = size(ROI);
         %check if s and sr are identical in the first 3 dimensions
@@ -300,7 +298,7 @@ for r = 1:n_rois
         % calculate max possible DIME
         maxDime = min(N-1,nvoxel);
         if dime(r) > maxDime
-            error('Maximum number of PCs is %d (N-1=%d, tCompcor MaskSize=%d). DIME for %s exceeds this value (%d).', maxDime,N,nvoxel,roi_name,dime(r));
+            error('Maximum number of PCs is %d (N-1=%d, tCompcor MaskSize=%d). DIME for %s exceeds this value (%d).', maxDime,(N-1),nvoxel,roi_name,dime(r));
         end
 %         if nvoxel < dime(r)
 %             error(['There are not enough voxels in ',roi_name,' to perform tCompCor. Voxels available: ',num2str(nvoxel),'.']);
@@ -313,7 +311,7 @@ for r = 1:n_rois
         nvoxel = length(indx);
         maxDime = min(N-1,nvoxel);
         if dime(r) > maxDime
-            error('Maximum number of PCs is %d (N-1=%d, RoiSize=%d). DIME for %s exceeds this value (%d).', maxDime,N,nvoxel,roi_name,dime(r));
+            error('Maximum number of PCs is %d (N-1=%d, RoiSize=%d). DIME for %s exceeds this value (%d).', maxDime,(N-1),nvoxel,roi_name,dime(r));
         end
     end
     V = data(:,indx);
