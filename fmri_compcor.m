@@ -173,6 +173,7 @@ else
         data = data';
     end
 end
+N = size(data,1);
 %NB: data must be provided with the last dimension as time, but at the end
 %data will be reshaped with the first dimension as time (this allows easy
 %handling of preloaded data)
@@ -282,7 +283,7 @@ for r = 1:n_rois
     if ~isempty(tCompCor) && dime(r) > 0  %tcompcor
         %we have to recompute std after removing trends (as done in the
         %original paper)
-        Xtrends = LegPol(s(4),2); Vtmp = data -Xtrends*(Xtrends\data);
+        Xtrends = LegPol(N,2); Vtmp = data -Xtrends*(Xtrends\data);
         stdv = std(Vtmp); clear Vtmp; %this V is just for mask purpose 
         [~,indx_std] = sort(stdv,'descend');
         indx_stdInRoi = ismember(indx_std,indx);
@@ -302,17 +303,17 @@ for r = 1:n_rois
     if firstmean && dime(r) > 0 % as done in CONN: first extract the mean signal (mS), then compute PCA over data ortogonalised with respect to mS. 
         % to get a "clean" mean signal, I have to remove trends from V.
         % Here PolOrder can't be -1
-        Xtrends = LegPol(size(V,1),PolOrder,0,'concat',ConCat);
+        Xtrends = LegPol(N,PolOrder,0,'concat',ConCat);
         V = V -Xtrends*(Xtrends\V); 
         mS = mean(V,2);
         % add the mean to COV
         COV = [COV,mS];
     end
     if PolOrder ~= -1  %regress trends
-        COV = [COV,LegPol(size(V,1),PolOrder,0,'concat',ConCat)];
+        COV = [COV,LegPol(N,PolOrder,0,'concat',ConCat)];
     end
     if ~isempty(freq) 
-        COV = [COV,SineCosineBasis(size(V,1),freq(1),freq(2),freq(3),1,'concat',ConCat)];
+        COV = [COV,SineCosineBasis(N,freq(1),freq(2),freq(3),1,'concat',ConCat)];
     end
     if ~isempty(confounds)  
         COV = [COV,confounds];
@@ -328,7 +329,7 @@ for r = 1:n_rois
         % force the mean to be zero (the distribution of mean values may be
         % slightly shifted if cofounds have been regressed). Also, again
         % remove trends to avoid SVD failure
-        Xtrends = LegPol(size(V,1),PolOrder,0,'concat',ConCat); V = V -Xtrends*(Xtrends\V); 
+        Xtrends = LegPol(N,PolOrder,0,'concat',ConCat); V = V -Xtrends*(Xtrends\V); 
         if DatNormalise
             %tvariance normalization
             V = bsxfun(@rdivide,V,std(V));
@@ -350,7 +351,7 @@ for r = 1:n_rois
             D = dime(r);
             if firstmean; D = D-1; end %remove one dimension
         else  % dime specifies the percentage of variance to extract
-            latent = diag(P.^2./(size(V,1)-1));
+            latent = diag(P.^2./(N-1));
             latent = latent./sum(latent); %normalise
             indexes = find(cumsum(latent)>dime(r));
             D = indexes(1);
