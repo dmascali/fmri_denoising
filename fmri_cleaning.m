@@ -114,11 +114,20 @@ else
     % In this case the last dimension must be time!
     s = size(data);
     n_dimension = length(s);
-    if restoremean; MEAN=mean(data,n_dimension); end
     if n_dimension > 2
+        if restoremean; MEAN=mean(data,n_dimension); end
         data = reshape(data,[prod(s(1:end-1)),s(end)])';
-    else
+    elseif n_dimension == 2 && ~isvector(data)
+        if restoremean; MEAN=mean(data,n_dimension); end
         data = data';
+    elseif isvector(data) %only in this case, whatever orientation is fine
+        if isrow(data)
+            vector_flipped = 1;
+            data = data';
+        else
+            vector_flipped = 0;
+        end
+        if restoremean; MEAN=mean(data); end
     end
     %override writeNii
     if writeNii; warning('You have to provide DATA as Nifti if you want the ouptut to be written to disk as Nifti.'); end
@@ -326,7 +335,7 @@ end
 % end
 
 %reshape res to original data size
-if n_dimension > 2
+if n_dimension > 2 && ~isvector(data)
     res = reshape(res',[s(1:end-1),Nfinal]);
 else % last dim must return to be time
     res = res';
