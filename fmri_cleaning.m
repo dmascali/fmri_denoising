@@ -1,5 +1,5 @@
-function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin)
-% FMRI_CLEANING mimics (most of) AFNI 3dTproject:
+function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
+%FMRI_CLEANING mimics (most of) AFNI 3dTproject:
 %  "This program projects (detrends) out various 'nuisance' time series from
 %   each voxel in the input dataset.  Note that all the projections are 
 %   done via linear regression, including the frequency filtering.  In this
@@ -7,45 +7,50 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 %   other time series of no interest (e.g., physiological estimates, motion
 %   parameters)." (from the help of 3dTproject)
 %
+%   Despite FMRI_CLEANING was designed specifically to clean fMRI data, it 
+%   can be use to clean (i.e., detrend) any vector or matrix.
+%
 %Input Options:
+%
 % -DATA can be a matrix or the path to a nifti file, if DATA is a matrix, the 
 %   last dimension must be time (e.g., [XxYxZxTIME] or [VOXELSxTIME]).
 % -POLORT is an integer for removing polynomials up to and including degree
 %   "polort". Polort up to order 2 are supported. Use POLORT = -1 to avoid
 %   polynomial regression (NOT advised, unless data is mean centred).
 %   For concatenated datasets, each run gets a separate set.
-% -PASSBAND regress out undesired frequencies using a basis of sines and 
-%   cosines. Use a 3 element vector, i.e: [TR,F1,F2]. Where TR is the repetition
-%   time, F1 and F2 are the frequency edges of the bandpass filter.
-%   Use F1= 0, to perform a low-pass filter
-%   Use F2=inf to perform a high-pass filter
-%   Use PASSBAND = [] to disable passband filtering. 
-%   For concatenated datasets, each run gets a separate set.
-% -ORT are the confounds timeseries. ORT must be a matrix [TIMExVARIABLES].
+% -ORT are the confounding timeseries. ORT must be a matrix [TIMExVARIABLES].
 %   Data will be orthogonalised with respect to ORT. For concatenated datasets
 %   you can construct ORT so to have one regressor across all runs or 
 %   separate each run regressors (e.g., you can concatenate realignment 
 %   parameters (RP) across runs. You can use 6 RP regressors or have 
 %   6*n_run regressors). 
-%   Use ORT = [] to not perform confound regression. 
+%   Use ORT = [] to avoid regression of confounders. 
 %   The mean will be removed from ort.
-% -CENS is a binary vector (lenght of data) indicating volumes to be
-%   considered. That is, zero-indexed volumes will be censored. You can use 
-%   fmri_censoring_mask to construct such vector.
-%   Put CENS = [] to not perform censoring. 
 %
 %Additional options can be specified using the following parameters (each 
 %parameter must be followed by its value ie,'param1',value1,'param2',value2):
-%  'cenmode'   : ['zero' / 'kill'] Specifies how censored points are treated: 
-%               'Zero', put zero values in their place.
+%
+%  'passband'  : [TR,F1,F2] Set this option to regress out undesired 
+%                frequencies using a basis of sines and cosines. TR is the 
+%                repetition time, F1 and F2 are the frequency edges of the 
+%                bandpass filter.
+%                Use F1= 0, to perform a low-pass filter
+%                Use F2=inf to perform a high-pass filter
+%                Use 'passband' = [] to disable passband filtering. 
+%                For concatenated datasets, each run gets a separate set.
+%  'cens'      : a binary vector (lenght of data) indicating volumes to be
+%                considered. That is, zero-indexed volumes will be censored.
+%                You can use fmri_censoring_mask to construct such vectors.
+%                Put CENS = [] to not perform censoring. 
+%  'censmode'   : ['zero' / 'kill'] Specifies how censored points are treated: 
+%               'Zero', put zero values in their place {default: 'zero'}.
 %               'kill', remove those time points NB: output dataset is
 %                       shorter than inputs
-%                {default: 'zero'}.
 %  'concat'    : An array of integer values for specifing the starting index
 %                of each run (index starts from 1). E.g., [1 240 480].
 %                This option should be always used when you want to
 %                concatenate multiple runs. In this way POLORT and PASSBAND
-%                regressors are constructed separately for each run.
+%                regressors are constructed for each run separately.
 %                Conversly, ORT run on the entire timeseries. If you want
 %                them to be split accordingly to the run, you must do it
 %                manually. {default = []}. 
@@ -78,15 +83,17 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 
 
 %--------------VARARGIN----------------------------------------------------
-params   = {'cenmode','concat','ortdemean','removePol0','restoremean','writeNii',}; 
-defparms = {'zero',         [],          1,       'off',        'off',     'off'};
+params   = {'censmode','concat','ortdemean','removePol0','restoremean','writeNii','passband' 'cens'}; 
+defparms = {'zero',         [],          1,       'off',        'off',     'off',        [],     []};
 legalvalues{1} = {'zero','kill'};
-legalvalues{2} = [];
+legalvalues{2} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalvalues{3} = [0 1]; %NB: In case of multiple sessions with one separate set of ort for each session, deaming all X or separately each ort session is the same. 
 legalvalues{4} = {'on','off'};
 legalvalues{5} = {'on','off'};
 legalvalues{6} = {'on','off'};
-[cenmode,concat_index,ortdemean,removePol0,restoremean,writeNii] = ParseVarargin(params,defparms,legalvalues,varargin,1);
+legalvalues{7} = {@(x) (isempty(x) || (~ischar(x) && numel(x)==3) && x(2) <= x(3)),'Passband requires a 3-element vector: [TR,F1,F2], with F1 <= F2.'};
+legalvalues{8} = {@(x) (isempty(x) || (~ischar(x) && length(unique(x)) <= 2) && max(x) <= 1),'Cens requires a binary vector, where 1-s indicate volumes to be preserved.'};
+[cenmode,concat_index,ortdemean,removePol0,restoremean,writeNii,passband,cens] = ParseVarargin(params,defparms,legalvalues,varargin,1);
 % -------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
@@ -162,9 +169,6 @@ for r = 1:run_number
     %add Legendre pol
     X_diag{r} = LegPol(N(r),polort,removePol0);
     if ~isempty(passband)
-        if length(passband) ~= 3
-            error('PASSBAND must be a three elements vector: [TR,F1,F2].');
-        end
         % sines and cosines to apply a band_pass filter
         X_diag{r} = [X_diag{r},SineCosineBasis(N(r),passband(1),passband(2),passband(3),1)];
     end
@@ -210,7 +214,7 @@ M_band = size(X,2) - M_ort -(polort+1)*run_number;
 %censoring initialization
 if ~isempty(cens)
     if length(cens) ~= N_tot
-        error('cens length doesn''t match the time points in data.');
+        error('Cens length doesn''t match the time points in data.');
     end
     N_cens = sum(cens == 0);
 else 
