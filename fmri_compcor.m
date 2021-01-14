@@ -133,6 +133,10 @@ legalValues{13} ={'on','off'};
 if ~iscell(rois)
     error('Please provide rois as cell, i.e., rois = {''path1'',''path2.nii''} or rois = {matrix1,matrix2}. An empty ROI is also allowed, i.e., rois = {[]}.');
 end
+% if the cell is empty {}, let's make it equivalent to {[]}
+if isempty(rois)
+    rois = {[]};
+end
 n_rois = length(rois);
 if length(dime)~=n_rois
     error('Please specify a dime for each rois e.g., dime = [5 5]');
