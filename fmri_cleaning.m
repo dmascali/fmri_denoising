@@ -44,8 +44,8 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 %                Put CENS = [] to not perform censoring. 
 %  'censmode'   : ['zero' / 'kill'] Specifies how censored points are treated: 
 %               'Zero', put zero values in their place {default: 'zero'}.
-%               'kill', remove those time points NB: output dataset is
-%                       shorter than inputs
+%               'kill', remove those time points NB: output dataset will be
+%                       shorter than the input DATA.
 %  'concat'    : An array of integer values for specifing the starting index
 %                of each run (index starts from 1). E.g., [1 240 480].
 %                This option should be always used when you want to
@@ -54,6 +54,9 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 %                Conversly, ORT run on the entire timeseries. If you want
 %                them to be split accordingly to the run, you must do it
 %                manually. {default = []}. 
+%  'mask'      : [matrix or nifti path] Only non nonzero elements in mask
+%                will be considered for cleaning.
+%                {default = []}.
 %  'writeNii'  : ['on'/'off'] Write the residuals in Nifti format. This 
 %                option works only if the input data is provided as a nifti 
 %                file. The file will be created in the working directory
@@ -83,8 +86,8 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 
 
 %--------------VARARGIN----------------------------------------------------
-params   = {'censmode','concat','ortdemean','removePol0','restoremean','writeNii','passband' 'cens'}; 
-defparms = {'zero',         [],          1,       'off',        'off',     'off',        [],     []};
+params   = {'censmode','concat','ortdemean','removePol0','restoremean','writeNii','passband' 'cens', 'mask'}; 
+defparms = {'zero',         [],          1,       'off',        'off',     'off',        [],     [],     []};
 legalvalues{1} = {'zero','kill'};
 legalvalues{2} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalvalues{3} = [0 1]; %NB: In case of multiple sessions with one separate set of ort for each session, deaming all X or separately each ort session is the same. 
@@ -93,7 +96,8 @@ legalvalues{5} = {'on','off'};
 legalvalues{6} = {'on','off'};
 legalvalues{7} = {@(x) (isempty(x) || (~ischar(x) && numel(x)==3) && x(2) <= x(3)),'Passband requires a 3-element vector: [TR,F1,F2], with F1 <= F2.'};
 legalvalues{8} = {@(x) (isempty(x) || (~ischar(x) && length(unique(x)) <= 2) && max(x) <= 1),'Cens requires a binary vector, where 1-s indicate volumes to be preserved.'};
-[cenmode,concat_index,ortdemean,removePol0,restoremean,writeNii,passband,cens] = ParseVarargin(params,defparms,legalvalues,varargin,1);
+legalvalues{9} = [];
+[cenmode,concat_index,ortdemean,removePol0,restoremean,writeNii,passband,cens,mask] = ParseVarargin(params,defparms,legalvalues,varargin,1);
 % -------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
@@ -117,7 +121,7 @@ else
         data = data';
     end
     %override writeNii
-    if writeNii; warning('You have to provide DATA as a Nifti path if you want the ouptut to be written to disk as Nifti.'); end
+    if writeNii; warning('You have to provide DATA as Nifti if you want the ouptut to be written to disk as Nifti.'); end
     writeNii = 0;
 end
 colons = repmat({':'},1,n_dimension-1);   %might be used for selecting non temporal dimensions
@@ -130,16 +134,68 @@ if polort == -1 || removePol0
     warning('The intercept is not modeled. Be sure data have been demeaned.');
 end
 
-%------------------- Automask if required ---------------------------------
-automask = 0; % In most of the cases, this option is useless
-if automask
-    stdv = std(data);
-    badIndex = zeros(1,length(stdv));
-    badIndex(stdv == 0) = 1;
-    badIndex(isnan(stdv)) = 1;
-    data(:,logical(badIndex)) = [];
+%------------------- Masking if required ----------------------------------
+if ischar(mask)  %in case the mask is a path to a nifti file
+    mask = spm_read_vols(spm_vol(mask));
+    smask = size(mask);
+    if ~logical(smask == s(1:3))
+        error('The input mask does not have the same dimension of data');
+    end
+    n_dimension = length(s);
+    if restoremean %we need to mask also the mean; if it's not binary, we 
+        %get an error later on
+        MEAN(mask == 0) = 0;
+    end
+    mask = reshape(mask,[1,smask(1)*smask(2)*smask(3)]);
+elseif ~isempty(mask)
+    smask = size(mask);
+    if  length(smask) > 2  %it's a 3d volume
+        if ~isequal(s(1:end-1),sr) 
+            error('The input mask does not have the same dimension of data');
+        end
+        if restoremean %we need to mask also the mean; if it's not binary, we 
+        %get an error later on
+            MEAN(mask == 0) = 0;
+        end
+        % ok, reshape
+        ROI = reshape(mask,[1,sr(1)*sr(2)*sr(3)]);
+    elseif isvector(mask)  %in this case the data is assumed to be 2D
+        if numel(mask)~= s(1)
+            error('The input mask does not have the same dimension of data');
+        end
+        if restoremean %we need to mask also the mean; if it's not binary, we 
+            %get an error later on
+            MEAN(mask == 0) = 0;
+        end
+        % no need to reshape
+    else
+        error('The input mask does not have the same dimension of data');
+    end
+end
+% extract indexes, and mask data
+if ~isempty(mask)
+%     un = unique(mask(:));
+%     if length(un) > 2 || sum(uint8(un)) > 1
+%         %the mask is not binary, make it binary
+%         mask(mask>0) = 1;
+%     end
+    mask_index = find(mask);
+    data = data(:,mask_index);
+else
+    mask_index = [];
 end
 %--------------------------------------------------------------------------
+
+% %------------------- Automask if required ---------------------------------
+% automask = 0; % In most of the cases, this option is useless
+% if automask
+%     stdv = std(data);
+%     badIndex = zeros(1,length(stdv));
+%     badIndex(stdv == 0) = 1;
+%     badIndex(isnan(stdv)) = 1;
+%     data(:,logical(badIndex)) = [];
+% end
+% %--------------------------------------------------------------------------
 
 %---- find out how many runs are present-----------------------------------
 if ~isempty(concat_index)
@@ -252,15 +308,22 @@ if ~isempty(cens)
 end
 
 %let's do the glm
-res = data - X*(X\data);
+res = data - X*(X\data);    
 Nfinal = size(res,1);  %temporal points, they may have changed depending on censoring
 
-% if automask was applied we have to restore the original shape
-if automask
-    RES = zeros(Nfinal,length(badIndex));
-    RES(:,not(logical(badIndex))) = res;
-    res = RES; clear RES;
+% if masking was applied we have to restore the original shape
+if ~isempty(mask)
+    RES = zeros(Nfinal,length(mask));
+    RES(:,mask_index) = res;
+    res = RES; 
 end
+
+% % if automask was applied we have to restore the original shape
+% if automask
+%     RES = zeros(Nfinal,length(badIndex));
+%     RES(:,not(logical(badIndex))) = res;
+%     res = RES; clear RES;
+% end
 
 %reshape res to original data size
 if n_dimension > 2
