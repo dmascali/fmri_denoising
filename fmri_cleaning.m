@@ -11,8 +11,7 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 % -DATA can be a matrix or the path to a nifti file, if DATA is a matrix, the 
 %   last dimension must be time (e.g., [XxYxZxTIME] or [VOXELSxTIME]).
 % -POLORT is an integer for removing polynomials up to and including degree
-%   "polort". Polort > 2 is not supported as it is a waste of tDoF if low 
-%   frequences are removed by the pass band filter. Use POLORT = -1 to avoid
+%   "polort". Polort up to order 2 are supported. Use POLORT = -1 to avoid
 %   polynomial regression (NOT advised, unless data is mean centred).
 %   For concatenated datasets, each run gets a separate set.
 % -PASSBAND regress out undesired frequencies using a basis of sines and 
@@ -22,10 +21,10 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 %   Use F2=inf to perform a high-pass filter
 %   Use PASSBAND = [] to disable passband filtering. 
 %   For concatenated datasets, each run gets a separate set.
-% -ORT are the condounds timeseries. ORT must be a matrix [TIMExVARIABLES].
+% -ORT are the confounds timeseries. ORT must be a matrix [TIMExVARIABLES].
 %   Data will be orthogonalised with respect to ORT. For concatenated datasets
 %   you can construct ORT so to have one regressor across all runs or 
-%   separate each run regressors (eg, you can concatenate realignment 
+%   separate each run regressors (e.g., you can concatenate realignment 
 %   parameters (RP) across runs. You can use 6 RP regressors or have 
 %   6*n_run regressors). 
 %   Use ORT = [] to not perform confound regression. 
@@ -71,6 +70,7 @@ function [res,model_info] = fmri_cleaning(data,polort,passband,ort,cens,varargin
 %Requirements:
 % SPM (https://www.fil.ion.ucl.ac.uk/spm/) is required if DATA is passed as
 % a Nifti file.
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
@@ -120,7 +120,7 @@ colons = repmat({':'},1,n_dimension-1);   %might be used for selecting non tempo
 %--------------------------------------------------------------------------
 
 if polort == -1 || removePol0
-    warning('The intercept is not modeled. Be sure data has been demeaned.');
+    warning('The intercept is not modeled. Be sure data have been demeaned.');
 end
 
 %------------------- Automask if required ---------------------------------
