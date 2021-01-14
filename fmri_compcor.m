@@ -59,6 +59,13 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   whether to compute the squares of the extracted signals
 %                   (as well as the squares of derivatives, if present)
 %                   {default=[],which is the same as zeros(1,length(rois))
+%   'MakeBinary'  : ['on','off'] If the ROIs are not binary fmri_compcor
+%                   throws an error. With this option you can skip this 
+%                   internal check and force the ROI to be binary.
+%                   {default='off'} .
+%   'SaveMask'    : ['on','off'] works only for tCompCor and if at least
+%                   one ROI is passed as a nifti file. Save the mask
+%                   created for tCompCor.
 %
 % If DIME = 0, you can either extract the mean (def) or the median,
 % by using the following parameter:
@@ -83,9 +90,6 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   its temporal variance before performing PCA {default='off'}
 %   'SigNormalise': ['on'/'off'], if set to 'on' the extracted signals X are
 %                   normalised to unit variance {defaul='on'}
-%   'SaveMask'    : ['on','off'] works only for tCompCor and if at least
-%                   one ROI is passed as a nifti file. Save the mask
-%                   created for tCompCor.
 %
 % NB1: By default, data is detrended (costant and linear trends are removed)
 %      before any computation (unless 'PolOrder' is specified)
@@ -112,8 +116,8 @@ if nargin < 3
 end
 
 %--------------VARARGIN----------------------------------------------------
-params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask'};
-defParms = {         [],      'off',           [],       [],          'off',     [],        1     'off',           'on',       [], 'mean',         [],     'off'};
+params  =  {'confounds','firstmean','derivatives','squares','DatNormalise','filter','PolOrder','FullOrt', 'SigNormalise', 'concat', 'type', 'tcompcor','SaveMask', 'MakeBinary'};
+defParms = {         [],      'off',           [],       [],          'off',     [],        1     'off',           'on',       [], 'mean',         [],     'off',         'off'};
 legalValues{1} = [];
 legalValues{2} = {'on','off'};
 legalValues{3} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
@@ -127,7 +131,8 @@ legalValues{10} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only intege
 legalValues{11} = {'mean','median'};
 legalValues{12} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
 legalValues{13} ={'on','off'};
-[confounds,firstmean,deri,squares,DatNormalise,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask] = ParseVarargin(params,defParms,legalValues,varargin,1);
+legalValues{14} ={'on','off'};
+[confounds,firstmean,deri,squares,DatNormalise,freq,PolOrder,FullOrt,SigNormalise,ConCat,MetricType,tCompCor,SaveMask,MakeBinary] = ParseVarargin(params,defParms,legalValues,varargin,1);
 %--------------------------------------------------------------------------
 %--Check input consistency and initialize variables------------------------
 if ~iscell(rois)
@@ -265,9 +270,13 @@ for r = 1:n_rois
     fprintf('%s - %s: extracting %s\n',fname,roi_name,whatToExtract);
     %----------------------------------------------------------------------
     %check if ROI is binary
-    un = unique(ROI(:));
-    if length(un) > 2 || sum(uint8(un)) > 1
-        error(sprintf('ROI %d is not binary',r));
+    if ~MakeBinary
+        un = unique(ROI(:));
+        if length(un) > 2 || sum(uint8(un)) > 1
+            error('ROI %d is not binary. You can use the property "MakeBinary" = "on" to make it binary.',r);
+        end
+    else % force the roi to be binary
+        ROI(ROI > 0) =1;
     end
     ROI = uint8(ROI);
     %----------------------------------------------------------------------
