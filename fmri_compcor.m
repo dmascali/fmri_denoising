@@ -168,6 +168,7 @@ fname = mfilename;
 fprintf('%s - start\n',fname);
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
+    [~,data_name] = fileparts(rois{r}); data_name = remove_nii_ext(data_name);
     [~,hdr] = evalc('spm_vol(data);'); % to avoid an annoying messange in case of .gz
     data = spm_read_vols(hdr);
     s = size(data);
@@ -181,6 +182,7 @@ else
     else
         data = data';
     end
+    data_name = inputname(1);      
 end
 N = size(data,1);
 %NB: data must be provided with the last dimension as time, but at the end
@@ -239,7 +241,12 @@ for r = 1:n_rois
             if numel(ROI)~= s(1)
                 error(sprintf('ROI %d does not have the same dimension of data',r));
             end
-            % no need to reshape
+            % make sure it's a row vector (since data has always time
+            % running on rows) This was not necessary in previous versions,
+            % yet now we have a .* operation between ROI and bad voxels
+            if iscolumn(ROI)
+                ROI = ROI';
+            end
         else
             error(sprintf('ROI %d does not have the same dimension of data',r));
         end
@@ -421,7 +428,10 @@ for r = 1:n_rois
         header_index = find(cellfun(@(x) ~isempty(x),header),1);   
         if ~isempty(header_index)
             hdr = header{header_index};
-            output_name = ['tCompCor_mask_',roi_name,'.nii'];
+            if ~isempty(data_name)
+                data_name = [data_name,'_'];
+            end
+            output_name = ['tCompCor_mask_',data_name,roi_name,'.nii'];
             hdr.fname = output_name;
             hdr.private.dat.fname = output_name;
             mask = 0.*ROI; mask(indx) = 1;
