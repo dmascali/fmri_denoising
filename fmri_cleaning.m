@@ -104,7 +104,7 @@ legalvalues{9} = [];
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
     [~,name] = fileparts(data); name = remove_nii_ext(name);
-    hdr = spm_vol(data);
+    [~,hdr] = evalc('spm_vol(data);'); % to avoid an annoying messange in case of .gz
     data = spm_read_vols(hdr);
     s = size(data);
     n_dimension = length(s);
@@ -145,7 +145,8 @@ end
 
 %------------------- Masking if required ----------------------------------
 if ischar(mask)  %in case the mask is a path to a nifti file
-    mask = spm_read_vols(spm_vol(mask));
+    [~,maskhdr] = evalc('spm_vol(mask);'); % to avoid an annoying messange in case of .gz
+    mask = spm_read_vols(maskhdr);
     smask = size(mask);
     if ~logical(smask == s(1:3))
         error('The input mask does not have the same dimension of data');
