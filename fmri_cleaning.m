@@ -89,7 +89,7 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 params   = {'censmode','concat','ortdemean','removePol0','restoremean','writeNii','passband' 'cens', 'mask'}; 
 defparms = {'zero',         [],          1,       'off',        'off',     'off',        [],     [],     []};
 legalvalues{1} = {'zero','kill'};
-legalvalues{2} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
+legalvalues{2} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x < 0)) == 0)),'Only positive integers are allowed, which represent the starting indexes of the runs.'};
 legalvalues{3} = [0 1]; %NB: In case of multiple sessions with one separate set of ort for each session, deaming all X or separately each ort session is the same. 
 legalvalues{4} = {'on','off'};
 legalvalues{5} = {'on','off'};

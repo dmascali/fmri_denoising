@@ -38,7 +38,7 @@ end
 %--------------VARARGIN----------------------------------------------------
 params   = {'concat'}; 
 defparms = {      []};
-legalvalues{1} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0)),'Only integer values are allowed.'};
+legalvalues{1} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x < 0)) == 0)),'Only positive integers are allowed, which represent the starting indexes of the runs.'};
 [concat_index] = ParseVarargin(params,defparms,legalvalues,varargin,1);
 % -------------------------------------------------------------------------
 
