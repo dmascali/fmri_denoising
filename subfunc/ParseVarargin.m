@@ -86,7 +86,7 @@ for l = 1:n_params
                 %this is a function handle
                 if ~legalvalues{l}{1}(var_arg{inputExist+1}) %evaluate the parameter
                     % result is false, print attached error message
-                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'". ',legalvalues{l}{2}]));
+                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"\n',legalvalues{l}{2},'\n']));
                 end
             else
                 if iscell(legalvalues{l}) 
@@ -100,15 +100,15 @@ for l = 1:n_params
                         for m = 1:length(legalvalues{l})
                             str = [str,' "',legalvalues{l}{m},'"'];
                         end
-                        str = [str,'.'];
+                        str = [str,'.\n'];
                     else
                         str = ['\nLegal values are:'];
                         for m = 1:length(legalvalues{l})
                             str = [str,' ',num2str(legalvalues{l}(m))];
                         end
-                        str = [str,'.'];
+                        str = [str,'.\n'];
                     end
-                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'".',str]));
+                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"',str]));
                 else % they are valid, force to be lowercase
                     var_arg{inputExist+1} = lower(var_arg{inputExist+1});
                 end
