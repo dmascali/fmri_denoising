@@ -38,6 +38,7 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 %   legalvalues{4} = {@(x) (sum(mod(x,1))==0),'Only integer values are allowed.'};
 %
 %   [tail,zscore_flag,delta] = parse_varargin(params,defparms,legalvalues,varargin)
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome

@@ -31,6 +31,7 @@ function [tmask,n_cens] = fmri_censoring_mask(vect,thr,varargin)
 %      for censoring M post TR volumes {default = []}
 %
 % Use 'verbose' property (1/0) to show output messages {defalut = 1}
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome

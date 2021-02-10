@@ -106,6 +106,7 @@ function X = fmri_compcor(data,rois,dime,varargin)
 % - Behzadi et al. (2007) Neuroimage 37, 90-101   
 % - Whitfield-Gabrieli and Nieto-Castanon (2012) Brain Connect. 2(3), 154-41
 % - Muschelli et al. (2014) Neuroimage 96, 22-35
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome

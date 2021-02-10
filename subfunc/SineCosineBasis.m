@@ -24,6 +24,7 @@ function [X] = SineCosineBasis(N,TR,F1,F2,invert,varargin)
 %                degree "polort". {default = -1; i.e., no polort}
 %
 % NB: By default, the constant component is not produced.
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome

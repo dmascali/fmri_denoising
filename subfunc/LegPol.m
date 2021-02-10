@@ -19,6 +19,7 @@ function X = LegPol(N,order,exclude_constant,varargin)
 %                concatenate multiple runs. In this way the basis functions
 %                are constructed separately for each run.{default = []}.
 %
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
