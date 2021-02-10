@@ -33,7 +33,7 @@ function [X] = SineCosineBasis(N,TR,F1,F2,invert,varargin)
 %--------------VARARGIN----------------------------------------------------
 params   = {'concat','polort'}; 
 defparms = {      [],      -1};
-legalvalues{1} = [];
+legalvalues{1} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x < 0)) == 0)),'Only positive integers are allowed, which represent the starting indexes of the runs.'};
 legalvalues{2} = [-1 0 1 2];
 [concat_index,polort] = ParseVarargin(params,defparms,legalvalues,varargin,1);
 % -------------------------------------------------------------------------
