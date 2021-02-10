@@ -44,6 +44,8 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 % Enrico Fermi Center, MARBILab, Rome
 % danielemascali@gmail.com
 
+debug_mode = 0; %use this flag to print complete error msg, including error lines
+
 if nargin == 0
     help parse_varargin
     return
@@ -71,7 +73,8 @@ while l <= size(var_arg,2)
         for m = 1:n_params
             str = [str,' "',params{m},'"'];
         end
-        error(sprintf(['There is no "',var_arg{l},'" property.\nValid property names are:',str,'.\n']));
+        msg = sprintf(['There is no "',var_arg{l},'" property.\nValid property names are:',str,'.\n']);
+        throw_error(msg,debug_mode)
     end
     l = l +2;
 end
@@ -86,7 +89,8 @@ for l = 1:n_params
                 %this is a function handle
                 if ~legalvalues{l}{1}(var_arg{inputExist+1}) %evaluate the parameter
                     % result is false, print attached error message
-                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"\n',legalvalues{l}{2},'\n']));
+                    msg = sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"\n',legalvalues{l}{2},'\n']);
+                    throw_error(msg,debug_mode)
                 end
             else
                 if iscell(legalvalues{l}) 
@@ -108,7 +112,8 @@ for l = 1:n_params
                         end
                         str = [str,'.\n'];
                     end
-                    error(sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"',str]));
+                    msg = sprintf(['Invalid value for parameter: "',var_arg{inputExist},'"',str]);
+                    throw_error(msg,debug_mode)
                 else % they are valid, force to be lowercase
                     var_arg{inputExist+1} = lower(var_arg{inputExist+1});
                 end
@@ -130,6 +135,19 @@ for l = 1:n_params
     end
 end
 
+return
+end
+
+function throw_error(msg,debug)
+if ~debug
+    stack = dbstack(2);
+    stack(1).line = 0;
+else
+    stack = dbstack('-completenames');
+end
+errorStruct.message = msg;
+errorStruct.stack = stack;
+error(errorStruct);
 return
 end
 
