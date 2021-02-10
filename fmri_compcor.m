@@ -48,7 +48,8 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   -1 : skip (not possilbe when DIME > 0)
 %                    0 : constant term 
 %                    1 : constant + linear terms {default}
-%                    2 : constant + linear + quadratic terms
+%                    2 : constant + linear + quadratic terms, 
+%                    ... up to order 5. 
 %   'Concat'      : An array of integer values for specifing the starting index
 %                   of each run in case of concatenated runs (index starts 
 %                   from 1). E.g., [1 240 480]. {default = []}.
@@ -125,7 +126,7 @@ legalValues{3} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x 
 legalValues{4} = [];
 legalValues{5} = {'on','off'};
 legalValues{6} = [];
-legalValues{7} = [-1 0 1 2];
+legalValues{7} = [-1 0 1 2 3 4 5];
 legalValues{8} = {'on','off'};
 legalValues{9} ={'on','off'};
 legalValues{10} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x < 0)) == 0)),'Only one positive integers are allowed, which represent the starting indexes of the runs.'};

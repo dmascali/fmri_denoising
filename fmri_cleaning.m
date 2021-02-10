@@ -15,7 +15,7 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 % -DATA can be a matrix or the path to a nifti file, if DATA is a matrix, the 
 %   last dimension must be time (e.g., [XxYxZxTIME] or [VOXELSxTIME]).
 % -POLORT is an integer for removing polynomials up to and including degree
-%   "polort". Polort up to order 2 are supported. Use POLORT = -1 to avoid
+%   "polort". Polort up to order 5 are supported. Use POLORT = -1 to avoid
 %   polynomial regression (NOT advised, unless data is mean centred).
 %   For concatenated datasets, each run gets a separate set.
 % -ORT are the confounding timeseries. ORT must be a matrix [TIMExVARIABLES].
