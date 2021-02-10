@@ -9,3 +9,7 @@ Collection of Matlab functions for denoising fMRI data, such as resting- or stea
 
 - `fmri_censoring_mask` creates temporal masks for volume censoring (e.g., using the framewise displacement).
 
+
+The code was developed for the following publication:
+> **Evaluation of denoising strategies for task‐based functional connectivity: Equalizing residual motion artifacts between rest and cognitively demanding tasks.** Mascali, D., Moraschi, M., DiNuzzo, M., Tommasin, S., Fratini, M., Gili, T., Wise, R.G., Mangia, S., Macaluso, E. and Giove, F.  [*Human Brain Mapping*](https://doi.org/10.1002/hbm.25332) (2021).
+
