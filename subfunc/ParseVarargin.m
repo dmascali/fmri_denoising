@@ -9,10 +9,11 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 % (ie, are not among PARAMS). 2) [optinal] checks validity of property values
 % (requires LEGALVALUES). 
 % All input must be cells (see examples). 
-% LEGALVALUES can be empty:
-%   empty -> no check (#2)
-%   a cell array of strings to be compared to the parameter value
-%   a two cell element. First element is a function handle which has to return 
+%
+% LEGALVALUES can be:
+%   - empty -> no check on property value
+%   - a cell array of strings to be compared to the parameter value
+%   - a two cell element. First element is a function handle which has to return 
 %          true or false depending on the parameter value. The second element
 %          is the error message in case the function returned false.
 %
