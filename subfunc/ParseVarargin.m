@@ -122,7 +122,7 @@ for l = 1:n_params
         end
         %-------------------------------------------------
         %input exists and is valid
-        if char2logic && sum(strcmpi(tobeconverted,var_arg{inputExist+1})) %convert to logical if appropriate
+        if char2logic && ischar(defparams{l}) && sum(strcmpi(tobeconverted,var_arg{inputExist+1})) %convert to logical if appropriate
             varargout{l} = char2logical(var_arg{inputExist+1},char2logical_true,char2logical_false);
         else
             varargout{l} = var_arg{inputExist+1}; %they are trasnformed to lowercase if and only if legalvalues{l} was not empty
