@@ -128,7 +128,7 @@ for l = 1:n_params
             varargout{l} = var_arg{inputExist+1}; %they are trasnformed to lowercase if and only if legalvalues{l} was not empty
         end
     else %assign default value
-        if char2logic && sum(strcmpi(tobeconverted,defparams{l})) %convert to logical if appropriate
+        if char2logic && ischar(defparams{l}) && sum(strcmpi(tobeconverted,defparams{l})) %convert to logical if appropriate
             varargout{l} = char2logical(defparams{l},char2logical_true,char2logical_false);
         else        
             varargout{l} = defparams{l}; %they are returned as they are (no lowercase forcing)
