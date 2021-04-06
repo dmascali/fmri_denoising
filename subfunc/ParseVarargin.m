@@ -13,6 +13,8 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 % LEGALVALUES can be:
 %   - empty -> no check on property value
 %   - a cell array of strings to be compared to the parameter value
+%   - an array of integer values to be compare to the parameter value
+%   - [true, false], in case of logical parameters
 %   - a two cell element. First element is a function handle which has to return 
 %          true or false depending on the parameter value. The second element
 %          is the error message in case the function returned false.
@@ -34,7 +36,7 @@ function varargout = ParseVarargin(params,defparams,legalvalues,var_arg,char2log
 %   defparms = {'both',   'off', '/home/PIPPO',      3, };                          
 %
 %   legalvalues{1} = {'both','right','left'};     %forced to be lowercase
-%   legalvalues{2} = {'true','false','off','on'}; %forced to be lowercase
+%   legalvalues{2} = {'off','on'};                %forced to be lowercase
 %   legalvalues{3} = [];                          %NOT forced to be lowercase  
 %   legalvalues{4} = {@(x) (sum(mod(x,1))==0),'Only integer values are allowed.'};
 %
