@@ -224,7 +224,7 @@ for r = 1:n_rois
         ROI = spm_read_vols(header{r});
         sr = size(ROI);
         %check if s and sr are identical in the first 3 dimensions
-        if ~logical(sr == s(1:3))
+        if any(~logical(sr == s(1:3)))
             error(sprintf('ROI %s does not have the same dimension of data',roi_name));
         end
         ROI = reshape(ROI,[1,sr(1)*sr(2)*sr(3)]);
