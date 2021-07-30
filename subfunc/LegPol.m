@@ -1,11 +1,12 @@
 function X = LegPol(N,order,exclude_constant,varargin)
-%return leg pol for regression up to order 2
+%return leg pol for regression up to order 5
 % -N     = number of time points
-% -order =  desired polynomial order (up to 2), i.e., :
+% -order =  desired polynomial order (up to 5), i.e., :
 %     -1 : empty matrix
 %      0 : constant term
 %      1 : constant + linear terms
 %      2 : constant + linear + quadratic terms
+%      etc..
 %
 % Use the exclude_costant flag (optional) to exlude the constant term (NB
 % you normally don't want to do that!)
@@ -19,6 +20,7 @@ function X = LegPol(N,order,exclude_constant,varargin)
 %                concatenate multiple runs. In this way the basis functions
 %                are constructed separately for each run.{default = []}.
 %
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
@@ -29,10 +31,14 @@ if order == -1
     return
 end
 
+if order > 5
+    error('Legendre Pol are supported up to order 5.');
+end
+
 %--------------VARARGIN----------------------------------------------------
 params   = {'concat'}; 
 defparms = {      []};
-legalvalues{1} = [];
+legalvalues{1} = {@(x) (isempty(x) || (~ischar(x) && sum(mod(x,1))==0 && sum((x < 0)) == 0)),'Only positive integers are allowed, which represent the starting indexes of the runs.'};
 [concat_index] = ParseVarargin(params,defparms,legalvalues,varargin,1);
 % -------------------------------------------------------------------------
 
@@ -66,35 +72,28 @@ X_dim = zeros(run_number,1);
 X_diag{1} = [];  
 
 for r = 1:run_number
-
-    if order == -1
-        X_diag{r} = [];
-        return
-    elseif order == 0
-        if ~exclude_constant
-            X_diag{r} = ones(n(r),1);
-        else
-            X_diag{r} = [];
+    X_diag{r} = [];
+    t = linspace(-1,1,n(r))'; %time, also first order
+    for o = 0:order
+        switch o
+            case {0}
+                if ~exclude_constant
+                    X_diag{r} = [X_diag{r}, ones(n(r),1)];
+                end
+            case {1}
+                X_diag{r} = [X_diag{r}, t];     
+            case {2}
+                X_diag{r} = [X_diag{r}, (0.5*(3*t.^2 - 1))];    
+            case {3}
+                X_diag{r} = [X_diag{r}, (0.5*(5*t.^3 - 3*t))];  
+            case {4}
+                X_diag{r} = [X_diag{r}, (1/8*(35*t.^4 - 30*t.^2 + 3))];  
+            case {5}
+                X_diag{r} = [X_diag{r}, (1/8*(63*t.^5 -70*t.^3 + 15*t))];  
         end
-    elseif order == 1
-        if ~exclude_constant
-            X_diag{r} = [ones(n(r),1), linspace(-1,1,n(r))'];    
-        else
-            X_diag{r} = linspace(-1,1,n(r))';    
-        end
-    elseif order == 2
-        if ~exclude_constant
-            % the 2nd order is: P2(x) = 0.5*(3*x.^2 -1)
-            t = linspace(-1,1,n(r))';
-            X_diag{r} = [ones(n(r),1), t, (0.5*(3*t.^2-1))];    
-        else
-            X_diag{r} = [linspace(-1,1,n(r))',(linspace(-1,1,n(r)).^2)'];   
-        end  
     end
-    
     %get size
     X_dim(r) = size(X_diag{r},2);
-    
 end
 
 % assemble pieces  

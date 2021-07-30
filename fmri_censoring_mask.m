@@ -10,19 +10,19 @@ function [tmask,n_cens] = fmri_censoring_mask(vect,thr,varargin)
 % parameter must be followed by its value ie,'param1',value1,'param2',value2)
 %
 %Besides the standard mode (based on absolute THR values) you can create
-% masks based on different algorithm:
+% masks based on different algorithms:
 %   - 'mode' = ['standard'/'random'/'top'/'bottom'] {default = 'standard'}
 %       -standard- works as described above.
-%       -random  - create random masks. In this modality, the THR values
+%       -random  - creates random masks. In this modality, the THR values
 %                  specify the number of volumes to be removed (or the
 %                  percentage of volumes, depending on the'Units' property).
-%       -top     - remove the top N (or percent, depending on the'Units' 
+%       -top     - removes the top N (or percent, depending on the'Units' 
 %                  property) points based on the VECT values. 
-%       -bottom  - remove the bottom N (or percent, depending on the'Units' 
+%       -bottom  - removes the bottom N (or percent, depending on the 'Units' 
 %                  property) points based on the VECT values. 
 %   - 'Units' = ['N'/'percent']  {default = 'N'}
-%      specify the units (number of points or percentage) for modality 
-%      'random','top' and 'bottom'  
+%       specifies the units (number of points or percentage) for modality 
+%       'random','top' and 'bottom'  
 %
 % In the standard mode only, you can specify the following parameters:
 %   - 'preTR' = [M (integer value)],
@@ -31,6 +31,7 @@ function [tmask,n_cens] = fmri_censoring_mask(vect,thr,varargin)
 %      for censoring M post TR volumes {default = []}
 %
 % Use 'verbose' property (1/0) to show output messages {defalut = 1}
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
@@ -40,8 +41,8 @@ function [tmask,n_cens] = fmri_censoring_mask(vect,thr,varargin)
 %--------------VARARGIN----------------------
 params  =  {'preTR','postTR',    'mode',  'units','verbose'};
 defParms = {     [],      [],'standard',      'N',        1};
-legalValues{1} = [];
-legalValues{2} = [];
+legalValues{1} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0 && x >= 0)),'Only positive integer values are allowed.'};
+legalValues{2} = {@(x) (isempty(x) || (~ischar(x) && mod(x,1)==0 && x >= 0)),'Only positive integer values are allowed.'};
 legalValues{3} = {'standard','random','top','bottom'};
 legalValues{4} = {'percent','N'};
 legalValues{5} = [0 1];

@@ -32,10 +32,16 @@ function RPmetrics = fmri_rp_metrics(rp,type,ReferenceImage)
 % - Yan, Chao-Gan, et al. "A comprehensive assessment of regional variation 
 %   in the impact of head micromovements on functional connectomics." 
 %   Neuroimage 76 (2013): 183-201.
+
 %__________________________________________________________________________
 % Daniele Mascali
 % Enrico Fermi Center, MARBILab, Rome
 % danielemascali@gmail.com
+
+if nargin == 0
+    help(mfilename)
+return
+end
 
 switch lower(type)
     case {'fsl'} %ok
