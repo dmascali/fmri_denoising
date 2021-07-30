@@ -7,7 +7,7 @@ function X = fmri_compcor(data,rois,dime,varargin)
 % -ROIS is a cell array containg either matrices or paths to nifti files.
 %   (e.g., {ROI1, ROI2, ROI3} ). ROIS must be binary. ROIS can also be
 %   empty matrices (e.g., {[]}, or {[],ROI2}). In this case the signal(s) are
-%   extracted overt the entire DATA matrix.
+%   extracted over the entire DATA matrix.
 %   Signals are extracted from each ROI separately and then concantenated 
 %   into X. 
 % -DIME is a vector that specifies for each ROI the number/type of signals: 
@@ -68,7 +68,7 @@ function X = fmri_compcor(data,rois,dime,varargin)
 %                   one ROI is passed as a nifti file. Save the mask
 %                   created for tCompCor.
 %
-% If DIME = 0, you can either extract the mean (def) or the median,
+% If DIME = 0, you can either extract the mean (default) or the median,
 % by using the following parameter:
 %
 %   'type'        : ['mean','median'] By defaul the function extracts the

@@ -36,12 +36,12 @@ function [res,model_info] = fmri_cleaning(data,polort,ort,varargin)
 %                bandpass filter.
 %                Use F1= 0, to perform a low-pass filter
 %                Use F2=inf to perform a high-pass filter
-%                Use 'passband' = [] to disable passband filtering. 
+%                {default: []}. 
 %                For concatenated datasets, each run gets a separate set.
 %  'cens'      : a binary vector (lenght of data) indicating volumes to be
 %                considered. That is, zero-indexed volumes will be censored.
 %                You can use fmri_censoring_mask to construct such vectors.
-%                Put CENS = [] to not perform censoring. 
+%                {default: []}. 
 %  'censmode'   : ['zero' / 'kill'] Specifies how censored points are treated: 
 %               'Zero', put zero values in their place {default: 'zero'}.
 %               'kill', remove those time points NB: output dataset will be
