@@ -165,12 +165,12 @@ else
     squares= zeros(1,n_rois);
 end
 %--------------------------------------------------------------------------
-% start comunicating to stdout:
+% start communicating to stdout:
 fname = mfilename;
 fprintf('%s - start\n',fname);
 %------LOADING DATA and reshape--------------------------------------------
 if ischar(data)  %in case data is a path to a nifti file
-    [~,data_name] = fileparts(rois{r}); data_name = remove_nii_ext(data_name);
+    [~,data_name] = fileparts(data); data_name = remove_nii_ext(data_name);
     [~,hdr] = evalc('spm_vol(data);'); % to avoid an annoying messange in case of .gz
     data = spm_read_vols(hdr);
     s = size(data);
@@ -255,7 +255,7 @@ for r = 1:n_rois
         roi_name = ['ROI',num2str(r)]; % cannot use inputname since rois are inside cells
     end
     %----------------------------------------------------------------------
-    % comunicat to stdout:
+    % communicate to stdout:
     if dime(r) == 0
          whatToExtract = [MetricType,' signal'];
     else
